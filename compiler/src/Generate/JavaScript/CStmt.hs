@@ -1,45 +1,29 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Generate.JavaScript.CStmt
-  (Expr(..), fromStmt)
+  (Expr(..), pretty,examplee, Stmt(..))
   where
 
--- Based on the language-ecmascript package.
--- https://hackage.haskell.org/package/language-ecmascript
--- They did the hard work of reading the spec to figure out
--- how all the types should fit together.
-
-import Prelude hiding (lines)
-import Data.ByteString.Builder as B
 
 -- Expressions
 data Expr
-    = String Builder
+    = String String
     | Null
 
-data LValue
-  = LRef String
 
-data Name
-  = AnyString
-
-data Case
-  = Case Expr [Stmt]
-  | Default [Stmt]
-
-    -- STATEMENTS
-
+-- STATEMENTS
 
 data Stmt
     = Block [Stmt]
     | EmptyStmt
-    | Var Builder Builder
+    | Var String String
 
+examplee :: Stmt
+examplee = Var "str" "Hi"
 
-    -- Die Funktion soll ein Statement in einen formatierten String umwandeln,
-    -- welcher den string als C-Programm darstellt.
-fromStmt :: Stmt -> Builder
-fromStmt statement =
+--Die Funktion soll ein Stmt nehmen und diesen in ein C-Program in Form eines Strings schreiben.
+pretty :: Stmt -> String
+pretty statement =
   case statement of
     Var name expr ->
-       "string " <> name <> " = " <> expr <> ";\n"
+       "string " ++ name ++ " = " ++ expr ++ ";\n"
