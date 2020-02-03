@@ -1,51 +1,41 @@
 {-# OPTIONS_GHC -Wall #-}
-{-# LANGUAGE EmptyDataDecls, FlexibleInstances #-}
+{-# LANGUAGE EmptyDataDecls    #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module Elm.Float
   ( Float
+  , toChars
   , fromPtr
   , toBuilder
-  )
-  where
+  ) where
 
-
-import Prelude hiding (Float)
-import Data.Binary (Binary, get, put)
+import           Data.Binary             (Binary, get, put)
 import qualified Data.ByteString.Builder as B
-import qualified Data.Utf8 as Utf8
-import Data.Word (Word8)
-import Foreign.Ptr (Ptr)
-
-
+import qualified Data.Utf8               as Utf8
+import           Data.Word               (Word8)
+import           Foreign.Ptr             (Ptr)
+import           Prelude                 hiding (Float)
 
 -- FLOATS
+type Float = Utf8.Utf8 ELM_FLOAT
 
-
-type Float =
-  Utf8.Utf8 ELM_FLOAT
-
+instance Show Float where
+  show float = toChars float
 
 data ELM_FLOAT
 
-
-
 -- HELPERS
-
+toChars :: Float -> [Char]
+toChars = Utf8.toChars
 
 fromPtr :: Ptr Word8 -> Ptr Word8 -> Float
-fromPtr =
-  Utf8.fromPtr
-
+fromPtr = Utf8.fromPtr
 
 {-# INLINE toBuilder #-}
 toBuilder :: Float -> B.Builder
-toBuilder =
-  Utf8.toBuilder
-
-
+toBuilder = Utf8.toBuilder
 
 -- BINARY
-
-
 instance Binary (Utf8.Utf8 ELM_FLOAT) where
   get = Utf8.getUnder256
   put = Utf8.putUnder256
