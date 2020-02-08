@@ -1,3 +1,5 @@
+worker/*
+dist-newstyle/*
 elm-stuff
 dist
 cabal-dev
