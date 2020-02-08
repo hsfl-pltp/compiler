@@ -1,11 +1,11 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generate.JavaScript.Example
+module Generate.C.Example
   (test1)
   where
 
 --Beispiel Konstruktor um die pretty Funktion zu testen.
-import Generate.JavaScript.CStmt 
+import Generate.C.Builder 
 
 
 example1 :: Stmt

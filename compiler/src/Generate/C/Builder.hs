@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generate.JavaScript.CStmt
+module Generate.C.Builder
   (Expr(..), pretty, Stmt(..), PrefixOp(..))
   where
 import Data.Typeable
@@ -29,20 +29,27 @@ data Stmt
     | IfStmt Expr Stmt Stmt
     
 
-
+-- Die Funktion soll ein Statement des Typen Var in einen String
+-- umwandeln wobei der DTanetyp in C durch die Funktion pretty übergeben wird.
+prettyDataType :: Stmt -> String
+prettyDataType statement  =
+  case statement of
+    Var dataType name expr ->
+      dataType ++ " " ++ name ++ " = " ++ (prettyExpr expr) ++ ";\n"
+  
 --Die Funktion soll ein Stmt nehmen und diesen in ein C-Program in Form eines Strings schreiben.
 pretty :: Stmt -> String
 pretty statement =
   case statement of
     Var dataType name expr ->
       case dataType of
-        "Integer" -> "int " ++ name ++ " = " ++ (prettyExpr expr) ++ ";\n"
-        "Double" -> "double " ++ name ++ " = " ++ (prettyExpr expr) ++ ";\n"
+        "Integer" -> prettyDataType (Var "int" name  expr)
+        "Double" ->  prettyDataType (Var "double" name  expr)
         "String" ->
-          "string" ++ " " ++ name ++ " = " ++ (prettyExpr expr) ++ ";\n"
+         prettyDataType (Var "string" name  expr)
 
         "Bool" ->
-          "bool" ++ " " ++ name ++ " = " ++ (prettyExpr expr) ++ ";\n"
+         prettyDataType (Var "bool" name  expr)
     Block array ->
       concat (map pretty array)
     IfStmt condition thenStmt elseStmt ->
