@@ -20,6 +20,7 @@ import qualified Data.Name               as Name
 -- SOURCE
 newtype Source =
   Source BS.ByteString
+  deriving (Show)
 
 -- TYPES
 data Types =
@@ -28,6 +29,7 @@ data Types =
     , _uniform   :: Map.Map Name.Name Type
     , _varying   :: Map.Map Name.Name Type
     }
+  deriving (Show)
 
 data Type
   = Int
@@ -37,6 +39,7 @@ data Type
   | V4
   | M4
   | Texture
+  deriving (Show)
 
 -- TO BUILDER
 toJsStringBuilder :: Source -> B.Builder

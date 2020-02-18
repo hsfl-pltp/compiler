@@ -89,6 +89,9 @@ import qualified Elm.String                       as ES
 -- NAME
 type Name = Utf8.Utf8 ELM_NAME
 
+instance Show Name where
+  show name = toChars name
+
 data ELM_NAME
 
 -- INSTANCES
