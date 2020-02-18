@@ -4,7 +4,6 @@
 
 module Elm.Float
   ( Float
-  , toChars
   , fromPtr
   , toBuilder
   ) where
@@ -19,15 +18,9 @@ import           Prelude                 hiding (Float)
 -- FLOATS
 type Float = Utf8.Utf8 ELM_FLOAT
 
-instance Show Float where
-  show float = toChars float
-
 data ELM_FLOAT
 
 -- HELPERS
-toChars :: Float -> [Char]
-toChars = Utf8.toChars
-
 fromPtr :: Ptr Word8 -> Ptr Word8 -> Float
 fromPtr = Utf8.fromPtr
 
