@@ -22,6 +22,7 @@ import           Prelude       hiding (traverse)
 -- LOCATED
 data Located a =
   At Region a -- PERF see if unpacking region is helpful
+  deriving (Show)
 
 instance Functor Located where
   fmap f (At region a) = At region (f a)
@@ -38,7 +39,7 @@ merge (At r1 _) (At r2 _) value = At (mergeRegions r1 r2) value
 -- POSITION
 data Position =
   Position {-# UNPACK #-}!Word16 {-# UNPACK #-}!Word16
-  deriving (Eq)
+  deriving (Eq, Show)
 
 at :: Position -> Position -> a -> Located a
 at start end a = At (Region start end) a
@@ -46,7 +47,7 @@ at start end a = At (Region start end) a
 -- REGION
 data Region =
   Region Position Position
-  deriving (Eq)
+  deriving (Eq, Show)
 
 toRegion :: Located a -> Region
 toRegion (At region _) = region

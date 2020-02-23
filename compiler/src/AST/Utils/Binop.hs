@@ -12,13 +12,13 @@ import           Prelude       hiding (Either (..))
 -- BINOP STUFF
 newtype Precedence =
   Precedence Int
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 data Associativity
   = Left
   | Non
   | Right
-  deriving (Eq)
+  deriving (Eq, Show)
 
 -- BINARY
 instance Binary Precedence where
