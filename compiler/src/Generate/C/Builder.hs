@@ -29,27 +29,22 @@ data Stmt
     | IfStmt Expr Stmt Stmt
     
 
--- Die Funktion soll ein Statement des Typen Var in einen String
--- umwandeln wobei der DTanetyp in C durch die Funktion pretty übergeben wird.
-prettyDataType :: Stmt -> String
-prettyDataType statement  =
-  case statement of
-    Var dataType name expr ->
-      dataType ++ " " ++ name ++ " = " ++ (prettyExpr expr) ++ ";\n"
+-- Converts a datatype in form of a String to the equivelant C-datatype.
+-- Also returned as a String.
+prettyDataType :: String -> String
+prettyDataType dataType  =
+  case dataType of
+    "Integer" -> "int" 
+    "Double" ->  "double" 
+    "String" ->  "string" 
+    "Bool" -> "bool" 
   
---Die Funktion soll ein Stmt nehmen und diesen in ein C-Program in Form eines Strings schreiben.
+--This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Stmt -> String
 pretty statement =
   case statement of
     Var dataType name expr ->
-      case dataType of
-        "Integer" -> prettyDataType (Var "int" name  expr)
-        "Double" ->  prettyDataType (Var "double" name  expr)
-        "String" ->
-         prettyDataType (Var "string" name  expr)
-
-        "Bool" ->
-         prettyDataType (Var "bool" name  expr)
+      (prettyDataType dataType) ++ " " ++ name ++ " = " ++ (prettyExpr expr) ++ ";\n"
     Block array ->
       concat (map pretty array)
     IfStmt condition thenStmt elseStmt ->
@@ -61,7 +56,7 @@ pretty statement =
         ]
 
 
---Die Funktion wandelt ein Argument des typen Expr in einen String um.
+--Converts an argument of the type Expr into a String.
 prettyExpr :: Expr -> String
 prettyExpr expression =
   case expression of
