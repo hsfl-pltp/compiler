@@ -14,9 +14,9 @@ data Expr
     | Integer Integer
     | Double Double
     | If Expr Expr Expr
+    | While Expr Expr Expr
     | Prefix PrefixOp Expr
     | Infix InfixOp Expr Expr
-
 
 
 
@@ -26,7 +26,10 @@ data Stmt
     = Block [Stmt]
     | EmptyStmt
     | Var String String Expr
+    | Const Expr
     | IfStmt Expr Stmt Stmt
+    | WhileStmt Expr Stmt
+    | Function String String Stmt
     
 
 -- Converts a datatype in form of a String to the equivelant C-datatype.
@@ -38,6 +41,7 @@ prettyDataType dataType  =
     "Double" ->  "double" 
     "String" ->  "string" 
     "Bool" -> "bool" 
+    "Void" -> "void"
   
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Stmt -> String
@@ -47,13 +51,21 @@ pretty statement =
       (prettyDataType dataType) ++ " " ++ name ++ " = " ++ (prettyExpr expr) ++ ";\n"
     Block array ->
       concat (map pretty array)
+    Const constExpr ->
+      "const" ++ (prettyExpr constExpr) ++ ";\n"
     IfStmt condition thenStmt elseStmt ->
       concat
-        ["if (", (prettyExpr condition), ") {\n"
+        ["if(", (prettyExpr condition), ") {\n"
         , (pretty thenStmt)
         , "} else {\n"
         , (pretty elseStmt) ,"}\n"
         ]
+    WhileStmt condition loopStmt ->
+      concat
+       ["while(", (prettyExpr condition), ") {\n"
+       , (pretty loopStmt)
+       , "}"
+       ]
 
 
 --Converts an argument of the type Expr into a String.
