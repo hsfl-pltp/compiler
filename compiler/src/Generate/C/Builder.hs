@@ -9,6 +9,7 @@ import Data.ByteString.Builder as B
 -- Expressions
 data Expr
     = String String
+    | Comma [Expr]
     | Null 
     | Bool Bool
     | Integer Integer
@@ -26,10 +27,12 @@ data Stmt
     = Block [Stmt]
     | EmptyStmt
     | Var String String Expr
+    | Decl String String
     | Const Expr
     | IfStmt Expr Stmt Stmt
     | WhileStmt Expr Stmt
-    | Function String String Stmt
+    | Function String String Stmt Stmt -- first Stmt is CommaStmt
+    | CommaStmt [Stmt] -- [Stmt] is Decl
     
 
 -- Converts a datatype in form of a String to the equivelant C-datatype.
@@ -53,6 +56,8 @@ pretty statement =
       concat (map pretty array)
     Const constExpr ->
       "const" ++ (prettyExpr constExpr) ++ ";\n"
+    Decl dataType name ->
+      (prettyDataType dataType) ++ " " ++ name ";\n"
     IfStmt condition thenStmt elseStmt ->
       concat
         ["if(", (prettyExpr condition), ") {\n"
@@ -66,6 +71,18 @@ pretty statement =
        , (pretty loopStmt)
        , "}"
        ]
+    Stmt commastmt -> 
+      concat (intersperse "," commastmt)) 
+    Function dataType name commastmt body ->
+      concat
+        [(prettyDataType dataType)
+        , " " ++ name ++ "("
+        , (pretty commastmt)
+        , ") {"
+        , (pretty body)
+        , "}"
+        ]
+      
 
 
 --Converts an argument of the type Expr into a String.
