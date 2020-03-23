@@ -58,7 +58,7 @@ pretty statement =
     Const constExpr ->
       "const" ++ (prettyExpr constExpr) ++ ";\n"
     Decl dataType name ->
-      (prettyDataType dataType) ++ " " ++ name ++";\n"
+      (prettyDataType dataType) ++ " " ++ name 
     IfStmt condition thenStmt elseStmt ->
       concat
         ["if(", (prettyExpr condition), ") {\n"
@@ -73,7 +73,7 @@ pretty statement =
        , "}"
        ]
     CommaStmt commastmt -> 
-       intercalate "," (map pretty commastmt)
+       intercalate ", " (map pretty commastmt)
     Function dataType name commastmt body ->
       concat
         [(prettyDataType dataType)

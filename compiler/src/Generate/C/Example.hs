@@ -9,7 +9,7 @@ import Generate.C.Builder
 
 
 example1 :: Stmt
-example1 = Block [Var "String" "str" (String "hi"), Var "Bool" "boolean" (Bool False), IfStmt (Prefix PrefixNot (Bool True)) (Var "String" "str" (String "hi")) (Var "String" "str" (String "hi")), Var "Double" "double1" (Double 1.0)]
+example1 = Block [Function "Void"  "testFunc" (CommaStmt [(Decl "Bool" "boolean"),(Decl "Bool" "boolean2") ]) (Var "String" "str" (String "hi")) ,Var "String" "str" (String "hi"), Var "Bool" "boolean" (Bool False), IfStmt (Prefix PrefixNot (Bool True)) (Var "String" "str" (String "hi")) (Var "String" "str" (String "hi")), Var "Double" "double1" (Double 1.0)]
 
 
 test1 :: String
