@@ -4,6 +4,7 @@ module Generate.C.Builder
   (Expr(..), pretty, Stmt(..), PrefixOp(..))
   where
 import Data.Typeable
+import Data.List
 import Data.ByteString.Builder as B
 
 -- Expressions
@@ -71,8 +72,8 @@ pretty statement =
        , (pretty loopStmt)
        , "}"
        ]
-    -- CommaStmt commastmt -> 
-    --   concat (intersperse "," commastmt) 
+    CommaStmt commastmt -> 
+       intercalate "," (map pretty commastmt)
     Function dataType name commastmt body ->
       concat
         [(prettyDataType dataType)
