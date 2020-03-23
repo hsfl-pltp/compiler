@@ -6,15 +6,17 @@ module Generate.C.Builder
 import Data.Typeable
 import Data.List
 import Data.ByteString.Builder as B
+import qualified Data.ByteString as BS
+import qualified Data.List as List
 
 -- Expressions
 data Expr
-    = String String
+    = String Builder
     | Comma [Expr]
     | Null 
     | Bool Bool
-    | Integer Integer
-    | Double Double
+    | Integer Builder
+    | Double Builder
     | If Expr Expr Expr
     | While Expr Expr Expr
     | Prefix PrefixOp Expr
@@ -27,57 +29,56 @@ data Expr
 data Stmt
     = Block [Stmt]
     | EmptyStmt
-    | Var String String Expr
-    | Decl String String
+    | Var Builder Builder Expr
+    | Decl Builder Builder
     | Const Expr
     | IfStmt Expr Stmt Stmt
     | WhileStmt Expr Stmt
-    | Function String String Stmt Stmt -- first Stmt is CommaStmt
+    | Function Builder Builder Stmt Stmt -- first Stmt is CommaStmt
     | CommaStmt [Stmt] -- [Stmt] is Decl
-    
 
 -- Converts a datatype in form of a String to the equivelant C-datatype.
 -- Also returned as a String.
-prettyDataType :: String -> String
+prettyDataType :: Builder -> Builder
 prettyDataType dataType  =
   case dataType of
     "Integer" -> "int" 
     "Double" ->  "double" 
-    "String" ->  "string" 
-    "Bool" -> "bool" 
+    "String" -> "string"  
+    "Bool" -> "bool"  
     "Void" -> "void"
   
 --This function takes a Stmt and converts it into a C-program as a string.
-pretty :: Stmt -> String
+pretty :: Stmt -> Builder
 pretty statement =
   case statement of
     Var dataType name expr ->
-      (prettyDataType dataType) ++ " " ++ name ++ " = " ++ (prettyExpr expr) ++ ";\n"
+      mconcat [(prettyDataType dataType) , " " , name , " = " , (prettyExpr expr) , ";\n"]
     Block array ->
-      concat (map pretty array)
+      mconcat (map pretty array)
     Const constExpr ->
-      "const" ++ (prettyExpr constExpr) ++ ";\n"
+      mconcat ["const" , (prettyExpr constExpr) , ";\n"]
     Decl dataType name ->
-      (prettyDataType dataType) ++ " " ++ name 
+      mconcat [(prettyDataType dataType) , " " , name]
     IfStmt condition thenStmt elseStmt ->
-      concat
+      mconcat
         ["if(", (prettyExpr condition), ") {\n"
         , (pretty thenStmt)
         , "} else {\n"
         , (pretty elseStmt) ,"}\n"
         ]
     WhileStmt condition loopStmt ->
-      concat
+      mconcat
        ["while(", (prettyExpr condition), ") {\n"
        , (pretty loopStmt)
        , "}"
        ]
     CommaStmt commastmt -> 
-       intercalate ", " (map pretty commastmt)
+        mconcat (List.intersperse ", " (map pretty commastmt))
     Function dataType name commastmt body ->
-      concat
+      mconcat
         [(prettyDataType dataType)
-        , " " ++ name ++ "("
+        , " " , name , "("
         , (pretty commastmt)
         , ") {"
         , (pretty body)
@@ -87,7 +88,7 @@ pretty statement =
 
 
 --Converts an argument of the type Expr into a String.
-prettyExpr :: Expr -> String
+prettyExpr :: Expr -> Builder
 prettyExpr expression =
   case expression of
     
@@ -95,20 +96,18 @@ prettyExpr expression =
      case bool of
        True ->  "true"
        False -> "false"
-    
-    String string -> string
 
-    If infixExpr expr1 expr2 -> (prettyExpr expr1) ++ " " ++ (prettyExpr infixExpr) ++ " " ++ (prettyExpr expr2)
+    If infixExpr expr1 expr2 -> mconcat [(prettyExpr expr1) , " " , (prettyExpr infixExpr) , " " , (prettyExpr expr2)]
     
     Null -> "null"
 
-    Integer integer -> (show integer)
+    Integer integer -> integer
 
-    Double double -> (show double)
+    Double double -> double
 
-    Infix infixoperator expr1 expr2 -> (prettyExpr expr1) ++ " " ++ (prettyInfix infixoperator) ++ " " ++ (prettyExpr expr2)
+    Infix infixoperator expr1 expr2 -> mconcat [(prettyExpr expr1) , " " , (prettyInfix infixoperator) , " " , (prettyExpr expr2)]
 
-    Prefix prefixOperator expr1 -> (prettyPrefix prefixOperator) ++ (prettyExpr expr1)
+    Prefix prefixOperator expr1 -> mconcat [(prettyPrefix prefixOperator) , (prettyExpr expr1)]
 
 
 
@@ -140,7 +139,7 @@ data PrefixOp
   | PrefixComplement -- ~+
 
 
-prettyInfix :: InfixOp -> String
+prettyInfix :: InfixOp -> Builder
 prettyInfix minfix =
   case minfix of 
     OpAdd -> " + "
@@ -163,7 +162,7 @@ prettyInfix minfix =
     OpSpRShift   -> " >> "
     OpZfRShift   -> " >>> "
 
-prettyPrefix :: PrefixOp -> String
+prettyPrefix :: PrefixOp -> Builder
 prettyPrefix mprefix =
   case mprefix of 
     PrefixNot -> "!"
