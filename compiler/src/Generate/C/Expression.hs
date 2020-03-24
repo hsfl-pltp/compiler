@@ -4,6 +4,8 @@ module Generate.C.Expression
   ()
   where
 
+import Data.ByteString.Builder as B
+
 import qualified Generate.C.Builder as C
 import qualified AST.Optimized as Opt
 
@@ -23,19 +25,18 @@ generate expr =
       C.String (convertString string)
     Opt.Int int ->
       C.Double (convertInt int)
--- uncomment when Double type is adjusted
-    --Opt.Float float ->
-      --C.String (convertFloat float)
+    Opt.Float float ->
+      C.Double (convertFloat float)
 
 
-convertString :: ES.String -> String
+convertString :: ES.String -> B.Builder
 convertString string =
-  Utf8.toChars string
+  Utf8.toBuilder string
 
-convertInt :: Int -> Double
+convertInt :: Int -> B.Builder
 convertInt int =
-  fromIntegral int
+  B.intDec int
 
---convertFloat :: EF.Float -> String
---convertFloat float =
-  --Utf8.toChars float
+convertFloat :: EF.Float -> B.Builder
+convertFloat float =
+  Utf8.toBuilder float
