@@ -37,16 +37,32 @@ data Stmt
     | Function Builder Builder Stmt Stmt -- first Stmt is CommaStmt
     | CommaStmt [Stmt] -- [Stmt] is Decl
 
+
+integerDataType :: Builder
+integerDataType =
+  "Integer"
+doubleDataType :: Builder
+doubleDataType =
+  "Double"
+stringDataType :: Builder
+stringDataType =
+  "String"
+boolDataType :: Builder
+boolDataType =
+  "Bool"
+voidDataType :: Builder
+voidDataType =
+  "Void"
 -- Converts a datatype in form of a String to the equivelant C-datatype.
 -- Also returned as a String.
 prettyDataType :: Builder -> Builder
 prettyDataType dataType  =
   case dataType of
-    "Integer" -> "int" 
-    "Double" ->  "double" 
-    "String" -> "string"  
-    "Bool" -> "bool"  
-    "Void" -> "void"
+    integerDataType -> "int" 
+    doubleDataType ->  "double" 
+    stringDataType -> "string"  
+    boolDataType -> "bool"  
+    voidDataType -> "void"
   
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Stmt -> Builder
