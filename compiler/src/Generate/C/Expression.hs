@@ -27,7 +27,8 @@ generate expr =
       C.Double (convertInt int)
     Opt.Float float ->
       C.Double (convertFloat float)
-
+    _ ->
+      error (show (expr))
 
 convertString :: ES.String -> B.Builder
 convertString string =

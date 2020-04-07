@@ -87,7 +87,7 @@ data Path
   = Index Index.ZeroBased Path
   | Unbox Path
   | Empty
-  deriving (Eq)
+  deriving (Eq, Show)
 
 
 

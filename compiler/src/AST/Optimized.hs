@@ -72,9 +72,11 @@ data Expr
   | Unit
   | Tuple Expr Expr (Maybe Expr)
   | Shader Shader.Source (Set.Set Name) (Set.Set Name)
+  deriving (Show)
 
 
 data Global = Global ModuleName.Canonical Name
+              deriving (Show)
 
 
 
@@ -113,7 +115,7 @@ data Decider a
       , _tests :: [(DT.Test, Decider a)]
       , _fallback :: Decider a
       }
-  deriving (Eq)
+  deriving (Eq, Show)
 
 
 data Choice
