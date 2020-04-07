@@ -63,7 +63,10 @@ data Name =
     { _author  :: !Author
     , _project :: !Project
     }
-  deriving (Ord, Show)
+  deriving (Ord)
+
+instance Show Name where
+  show name = toChars name
 
 type Author = Utf8.Utf8 AUTHOR
 

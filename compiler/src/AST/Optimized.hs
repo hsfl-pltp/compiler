@@ -77,15 +77,18 @@ data Global =
 data Def
   = Def Name Expr
   | TailDef Name [Name] Expr
+  deriving (Show)
 
 data Destructor =
   Destructor Name Path
+  deriving (Show)
 
 data Path
   = Index Index.ZeroBased Path
   | Field Name Path
   | Unbox Path
   | Root Name
+  deriving (Show)
 
 -- BRANCHING
 data Decider a
@@ -105,6 +108,7 @@ data Decider a
 data Choice
   = Inline Expr
   | Jump Int
+  deriving (Show)
 
 -- OBJECT GRAPH
 data GlobalGraph =

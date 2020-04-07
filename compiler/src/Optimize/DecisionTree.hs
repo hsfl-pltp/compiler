@@ -66,7 +66,7 @@ data Test
   | IsChr ES.String
   | IsStr ES.String
   | IsBool Bool
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 data Path
   = Index Index.ZeroBased Path

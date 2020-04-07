@@ -224,7 +224,7 @@ data CtorOpts
   = Normal
   | Enum
   | Unbox
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 data Ctor =
   Ctor Name Index.ZeroBased Int [Type] -- CACHE length args
