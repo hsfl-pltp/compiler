@@ -6,7 +6,6 @@ module Generate.C.Builder
 import Data.Typeable
 import Data.List
 import Data.ByteString.Builder as B
-import qualified Data.ByteString as BS
 import qualified Data.List as List
 
 -- Expressions
@@ -29,40 +28,26 @@ data Expr
 data Stmt
     = Block [Stmt]
     | EmptyStmt
-    | Var Builder Builder Expr
-    | Decl Builder Builder
+    | Var String Builder Expr
+    | Decl String Builder
     | Const Expr
     | IfStmt Expr Stmt Stmt
     | WhileStmt Expr Stmt
-    | Function Builder Builder Stmt Stmt -- first Stmt is CommaStmt
+    | Function String Builder Stmt Stmt -- first Stmt is CommaStmt
     | CommaStmt [Stmt] -- [Stmt] is Decl
 
 
-integerDataType :: Builder
-integerDataType =
-  "Integer"
-doubleDataType :: Builder
-doubleDataType =
-  "Double"
-stringDataType :: Builder
-stringDataType =
-  "String"
-boolDataType :: Builder
-boolDataType =
-  "Bool"
-voidDataType :: Builder
-voidDataType =
-  "Void"
+
 -- Converts a datatype in form of a String to the equivelant C-datatype.
 -- Also returned as a String.
-prettyDataType :: Builder -> Builder
+prettyDataType :: String -> Builder
 prettyDataType dataType  =
   case dataType of
-    integerDataType -> "int" 
-    doubleDataType ->  "double" 
-    stringDataType -> "string"  
-    boolDataType -> "bool"  
-    voidDataType -> "void"
+    "Integer" -> "int" 
+    "Double" ->  "double" 
+    "String" -> "string"  
+    "Bool" -> "bool"  
+    "Void" -> "void"
   
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Stmt -> Builder
@@ -100,6 +85,7 @@ pretty statement =
         , (pretty body)
         , "}"
         ]
+     
       
 
 
