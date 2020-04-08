@@ -23,8 +23,8 @@ generate expr =
     Opt.Str string  -> C.String (convertString string)
     Opt.Int int     -> C.Double (convertInt int)
     Opt.Float float -> C.Double (convertFloat float)
-    -- _ ->
-      -- error (show (expr))
+    _ -> error (show (expr))
+
 
 convertString :: ES.String -> B.Builder
 convertString string = Utf8.toBuilder string
