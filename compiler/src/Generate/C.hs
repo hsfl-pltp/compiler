@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Generate.C
   ( generate
   )
@@ -18,10 +19,8 @@ import qualified AST.Optimized                   as Opt
 import qualified Data.Index                      as Index
 import qualified Elm.Kernel                      as K
 import qualified Elm.ModuleName                  as ModuleName
-import qualified Generate.JavaScript.Builder     as JS
-import qualified Generate.JavaScript.Expression  as Expr
-import qualified Generate.JavaScript.Functions   as Functions
-import qualified Generate.JavaScript.Name        as JsName
+import qualified Generate.C.Builder              as JS
+import qualified Generate.C.Expression           as Expr
 import qualified Generate.Mode                   as Mode
 import qualified Reporting.Doc                   as D
 import qualified Reporting.Render.Type           as RT
@@ -37,3 +36,12 @@ type Mains = Map.Map ModuleName.Canonical Opt.Main
 
 generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
 generate mode (Opt.GlobalGraph graph _) mains = undefined
+  -- let
+  --   state = Map.foldrWithKey (addMain mode graph) emptyState mains
+  -- in
+  -- "(function(scope){\n'use strict';"
+  -- <> Functions.functions
+  -- <> perfNote mode
+  -- <> stateToBuilder state
+  -- <> toMainExports mode mains
+  -- <> "}(this));"
