@@ -12,24 +12,24 @@ module Make
 
 
 import qualified Data.ByteString.Builder as B
-import qualified Data.Maybe as Maybe
-import qualified Data.NonEmptyList as NE
-import qualified System.Directory as Dir
-import qualified System.FilePath as FP
+import qualified Data.Maybe              as Maybe
+import qualified Data.NonEmptyList       as NE
+import qualified System.Directory        as Dir
+import qualified System.FilePath         as FP
 
-import qualified AST.Optimized as Opt
-import qualified BackgroundWriter as BW
+import qualified AST.Optimized           as Opt
+import qualified BackgroundWriter        as BW
 import qualified Build
-import qualified Elm.Details as Details
-import qualified Elm.ModuleName as ModuleName
+import qualified Elm.Details             as Details
+import qualified Elm.ModuleName          as ModuleName
 import qualified File
 import qualified Generate
-import qualified Generate.Html as Html
+import qualified Generate.Html           as Html
 import qualified Reporting
-import qualified Reporting.Exit as Exit
-import qualified Reporting.Task as Task
+import qualified Reporting.Exit          as Exit
+import qualified Reporting.Task          as Task
 import qualified Stuff
-import Terminal (Parser(..))
+import           Terminal                (Parser (..))
 
 
 
@@ -38,17 +38,18 @@ import Terminal (Parser(..))
 
 data Flags =
   Flags
-    { _debug :: Bool
+    { _debug    :: Bool
     , _optimize :: Bool
-    , _output :: Maybe Output
-    , _report :: Maybe ReportType
-    , _docs :: Maybe FilePath
+    , _output   :: Maybe Output
+    , _report   :: Maybe ReportType
+    , _docs     :: Maybe FilePath
     }
 
 
 data Output
   = JS FilePath
   | Html FilePath
+  | Arduino FilePath
   | DevNull
 
 
@@ -117,7 +118,14 @@ runHelp root paths style (Flags debug optimize maybeOutput _ maybeDocs) =
                       builder <- toBuilder root details desiredMode artifacts
                       generate style target (Html.sandwich name builder) (NE.List name [])
 
+                Just (Arduino target) ->
+                  case getNoMains artifacts of
+                    [] ->
+                      do  builder <- toBuilderArduino root details desiredMode artifacts
+                          generate style target builder (Build.getRootNames artifacts)
 
+                    name:names ->
+                      Task.throw (Exit.MakeNonMainFilesIntoJavaScript name names)
 
 -- GET INFORMATION
 
@@ -125,7 +133,7 @@ runHelp root paths style (Flags debug optimize maybeOutput _ maybeDocs) =
 getStyle :: Maybe ReportType -> IO Reporting.Style
 getStyle report =
   case report of
-    Nothing -> Reporting.terminal
+    Nothing   -> Reporting.terminal
     Just Json -> return Reporting.json
 
 
@@ -146,7 +154,7 @@ getExposed (Details.Details _ validOutline _ _ _ _) =
 
     Details.ValidPkg _ exposed _ ->
       case exposed of
-        [] -> Task.throw Exit.MakePkgNeedsExposing
+        []   -> Task.throw Exit.MakePkgNeedsExposing
         m:ms -> return (NE.List m ms)
 
 
@@ -253,6 +261,7 @@ generate style target builder names =
 
 
 data DesiredMode = Debug | Dev | Prod
+  deriving Show
 
 
 toBuilder :: FilePath -> Details.Details -> DesiredMode -> Build.Artifacts -> Task B.Builder
@@ -263,6 +272,13 @@ toBuilder root details desiredMode artifacts =
       Dev   -> Generate.dev   root details artifacts
       Prod  -> Generate.prod  root details artifacts
 
+-- Arduino-Version of toBuilder
+toBuilderArduino :: FilePath -> Details.Details -> DesiredMode -> Build.Artifacts -> Task B.Builder
+toBuilderArduino root details desiredMode artifacts =
+  Task.mapError Exit.MakeBadGenerate $
+    case desiredMode of
+      Debug -> Generate.debugArduino root details artifacts
+      _     -> error ("Mode " ++ show desiredMode ++ " not supported")
 
 
 -- PARSERS
@@ -295,6 +311,7 @@ parseOutput name
   | isDevNull name      = Just DevNull
   | hasExt ".html" name = Just (Html name)
   | hasExt ".js"   name = Just (JS name)
+  | hasExt ".ino"  name = Just (Arduino name)
   | otherwise           = Nothing
 
 

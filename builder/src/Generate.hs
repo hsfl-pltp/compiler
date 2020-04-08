@@ -4,33 +4,36 @@ module Generate
   , dev
   , prod
   , repl
+  , debugArduino
   )
   where
 
 
-import Prelude hiding (cycle, print)
-import Control.Concurrent (MVar, forkIO, newEmptyMVar, newMVar, putMVar, readMVar)
-import Control.Monad (liftM2)
-import qualified Data.ByteString.Builder as B
-import Data.Map ((!))
-import qualified Data.Map as Map
-import qualified Data.Maybe as Maybe
-import qualified Data.Name as N
-import qualified Data.NonEmptyList as NE
+import           Control.Concurrent        (MVar, forkIO, newEmptyMVar, newMVar,
+                                            putMVar, readMVar)
+import           Control.Monad             (liftM2)
+import qualified Data.ByteString.Builder   as B
+import           Data.Map                  ((!))
+import qualified Data.Map                  as Map
+import qualified Data.Maybe                as Maybe
+import qualified Data.Name                 as N
+import qualified Data.NonEmptyList         as NE
+import           Prelude                   hiding (cycle, print)
 
-import qualified AST.Optimized as Opt
+import qualified AST.Optimized             as Opt
 import qualified Build
 import qualified Elm.Compiler.Type.Extract as Extract
-import qualified Elm.Details as Details
-import qualified Elm.Interface as I
-import qualified Elm.ModuleName as ModuleName
-import qualified Elm.Package as Pkg
+import qualified Elm.Details               as Details
+import qualified Elm.Interface             as I
+import qualified Elm.ModuleName            as ModuleName
+import qualified Elm.Package               as Pkg
 import qualified File
-import qualified Generate.JavaScript as JS
-import qualified Generate.Mode as Mode
-import qualified Nitpick.Debug as Nitpick
-import qualified Reporting.Exit as Exit
-import qualified Reporting.Task as Task
+import qualified Generate.C                as C
+import qualified Generate.JavaScript       as JS
+import qualified Generate.Mode             as Mode
+import qualified Nitpick.Debug             as Nitpick
+import qualified Reporting.Exit            as Exit
+import qualified Reporting.Task            as Task
 import qualified Stuff
 
 
@@ -84,6 +87,16 @@ repl root details ansi (Build.ReplArtifacts home modules localizer annotations) 
       return $ JS.generateForRepl ansi localizer graph home name (annotations ! name)
 
 
+debugArduino :: FilePath -> Details.Details -> Build.Artifacts -> Task B.Builder
+debugArduino root details (Build.Artifacts pkg ifaces roots modules) =
+  do  loading <- loadObjects root details modules
+      types   <- loadTypes root ifaces modules
+      objects <- finalizeObjects loading
+      let mode = Mode.Dev (Just types)
+      let graph = objectsToGlobalGraph objects
+      let mains = gatherMains pkg objects roots
+      return (C.generate mode graph mains)
+
 
 -- CHECK FOR DEBUG
 
@@ -122,7 +135,7 @@ lookupMain pkg locals root =
 data LoadingObjects =
   LoadingObjects
     { _foreign_mvar :: MVar (Maybe Opt.GlobalGraph)
-    , _local_mvars :: Map.Map ModuleName.Raw (MVar (Maybe Opt.LocalGraph))
+    , _local_mvars  :: Map.Map ModuleName.Raw (MVar (Maybe Opt.LocalGraph))
     }
 
 
@@ -154,7 +167,7 @@ loadObject root modul =
 data Objects =
   Objects
     { _foreign :: Opt.GlobalGraph
-    , _locals :: Map.Map ModuleName.Raw Opt.LocalGraph
+    , _locals  :: Map.Map ModuleName.Raw Opt.LocalGraph
     }
 
 

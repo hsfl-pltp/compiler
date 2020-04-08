@@ -5,15 +5,15 @@ module Main
   where
 
 
-import Prelude hiding (init)
-import qualified Data.List as List
+import qualified Data.List                    as List
+import           Prelude                      hiding (init)
+import           Text.PrettyPrint.ANSI.Leijen ((<>))
 import qualified Text.PrettyPrint.ANSI.Leijen as P
-import Text.PrettyPrint.ANSI.Leijen ((<>))
-import Text.Read (readMaybe)
+import           Text.Read                    (readMaybe)
 
-import qualified Elm.Version as V
-import Terminal
-import Terminal.Helpers
+import qualified Elm.Version                  as V
+import           Terminal
+import           Terminal.Helpers
 
 import qualified Bump
 import qualified Develop
@@ -197,7 +197,6 @@ make =
         |-- flag "docs" Make.docsFile "Generate a JSON file of documentation for a package. Eventually it will be possible to preview docs with `reactor` because it is quite hard to deal with these JSON files directly."
   in
   Terminal.Command "make" Uncommon details example (zeroOrMore elmFile) makeFlags Make.run
-
 
 
 -- INSTALL
