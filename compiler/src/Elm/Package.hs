@@ -213,7 +213,7 @@ instance Eq Canonical where
 
 -- BINARY
 instance Binary Name -- PERF try storing as a Word16
-                                                      where
+                                                     where
   get = liftM2 Name Utf8.getUnder256 Utf8.getUnder256
   put (Name a b) = Utf8.putUnder256 a >> Utf8.putUnder256 b
 

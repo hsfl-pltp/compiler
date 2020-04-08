@@ -126,37 +126,35 @@ data InfixOp
   | OpGt -- >
   | OpGe -- >=
   | OpAnd -- &&
-  | OpOr  -- ||
+  | OpOr -- ||
   | OpBitwiseAnd -- &
   | OpBitwiseXor -- ^
-  | OpBitwiseOr  -- |
-  | OpLShift     -- <<
-  | OpSpRShift   -- >>
-  | OpZfRShift   -- >>>
-
+  | OpBitwiseOr -- |
+  | OpLShift -- <<
+  | OpSpRShift -- >>
+  | OpZfRShift -- >>>
 
 data PrefixOp
-  = PrefixNot        -- !
-  | PrefixNegate     -- -
+  = PrefixNot -- !
+  | PrefixNegate -- -
   | PrefixComplement -- ~+
-
 
 prettyInfix :: InfixOp -> Builder
 prettyInfix minfix =
-  case minfix of 
-    OpAdd -> " + "
-    OpSub -> " - "
-    OpMul -> " * " -- *
-    OpDiv -> " / " -- /
-    OpMod -> " % "
-    OpEq -> " == "
-    OpNe -> " != "
-    OpLt -> " < "
-    OpLe -> " <= "
-    OpGt -> " > "
-    OpGe -> " >= "
-    OpAnd -> " && "
-    OpOr -> " || "
+  case minfix of
+    OpAdd        -> " + "
+    OpSub        -> " - "
+    OpMul        -> " * " -- *
+    OpDiv        -> " / " -- /
+    OpMod        -> " % "
+    OpEq         -> " == "
+    OpNe         -> " != "
+    OpLt         -> " < "
+    OpLe         -> " <= "
+    OpGt         -> " > "
+    OpGe         -> " >= "
+    OpAnd        -> " && "
+    OpOr         -> " || "
     OpBitwiseAnd -> " & "
     OpBitwiseXor -> " ^ "
     OpBitwiseOr  -> " | "
@@ -166,7 +164,7 @@ prettyInfix minfix =
 
 prettyPrefix :: PrefixOp -> Builder
 prettyPrefix mprefix =
-  case mprefix of 
-    PrefixNot -> "!"
-    PrefixNegate -> "-"
+  case mprefix of
+    PrefixNot        -> "!"
+    PrefixNegate     -> "-"
     PrefixComplement -> "~+"
