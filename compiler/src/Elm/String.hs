@@ -26,9 +26,6 @@ import           Prelude                 hiding (String)
 -- STRINGS
 type String = Utf8.Utf8 ELM_STRING
 
-instance Show String where
-  show string = toChars string
-
 data ELM_STRING
 
 -- HELPERS

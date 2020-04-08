@@ -9,18 +9,15 @@ module Elm.Float
   , toBuilder
   ) where
 
-import           Data.Binary             (Binary, get, put)
+import Data.Binary (Binary, get, put)
 import qualified Data.ByteString.Builder as B
-import qualified Data.Utf8               as Utf8
-import           Data.Word               (Word8)
-import           Foreign.Ptr             (Ptr)
-import           Prelude                 hiding (Float)
+import qualified Data.Utf8 as Utf8
+import Data.Word (Word8)
+import Foreign.Ptr (Ptr)
+import Prelude hiding (Float)
 
 -- FLOATS
 type Float = Utf8.Utf8 ELM_FLOAT
-
-instance Show Float where
-  show float = toChars float
 
 data ELM_FLOAT
 
