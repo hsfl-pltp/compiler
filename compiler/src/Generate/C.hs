@@ -45,3 +45,17 @@ generate mode (Opt.GlobalGraph graph _) mains = undefined
   -- <> stateToBuilder state
   -- <> toMainExports mode mains
   -- <> "}(this));"
+
+perfNote :: Mode.Mode -> B.Builder
+perfNote mode =
+  case mode of
+    Mode.Prod _ ->
+      ""
+    Mode.Dev Nothing ->
+      "serial.print('Compiled in DEV mode. Follow the advice at "
+      <> B.stringUtf8 (D.makeNakedLink "optimize")
+      <> " for better performance and smaller assets.')"
+    Mode.Dev (Just _) ->
+      "serial.print('Compiled in DEV mode. Follow the advice at "
+      <> B.stringUtf8 (D.makeNakedLink "optimize")
+      <> " for better performance and smaller assets.')'"
