@@ -7,6 +7,7 @@ module Generate.JavaScript
   ) where
 
 import qualified Data.ByteString.Builder         as B
+import           Data.ByteString.Lazy.UTF8       (toString)
 import qualified Data.List                       as List
 import           Data.Map                        ((!))
 import qualified Data.Map                        as Map
@@ -14,6 +15,7 @@ import           Data.Monoid                     ((<>))
 import qualified Data.Name                       as Name
 import qualified Data.Set                        as Set
 import qualified Data.Utf8                       as Utf8
+import           Debug.Trace                     as D
 import           Prelude                         hiding (cycle, print)
 
 import qualified AST.Canonical                   as Can
@@ -41,7 +43,12 @@ generate mode (Opt.GlobalGraph graph _) mains =
    in "(function(scope){\n'use strict';" <>
       Functions.functions <>
       perfNote mode <>
-      stateToBuilder state <> toMainExports mode mains <> "}(this));"
+      stateToBuilder state <>
+      D.trace
+        ("toMainExports: " ++
+         toString (B.toLazyByteString (toMainExports mode mains)))
+        (toMainExports mode mains) <>
+      "}(this));"
 
 addMain ::
      Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
