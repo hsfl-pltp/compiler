@@ -19,13 +19,13 @@ import qualified Elm.String              as ES
 import qualified Data.Utf8               as Utf8
 
 -- generates Expression for Type
-generate :: Opt.Expr -> C.Expr
+generate :: Opt.Expr -> Code
 generate expr =
   case expr of
-    Opt.Bool bool   -> C.Bool bool
-    Opt.Str string  -> C.String (convertString string)
-    Opt.Int int     -> C.Double (convertInt int)
-    Opt.Float float -> C.Double (convertFloat float)
+    Opt.Bool bool   -> CExpr (C.Bool bool)
+    Opt.Str string  -> CExpr (C.String (convertString string))
+    Opt.Int int     -> CExpr (C.Double (convertInt int))
+    Opt.Float float -> CExpr (C.Double (convertFloat float))
     _               -> error (show expr)
 
 data Code
