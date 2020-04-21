@@ -57,13 +57,9 @@ perfNote mode =
     Mode.Prod _ ->
       ""
     Mode.Dev Nothing ->
-      "serial.print('Compiled in DEV mode. Follow the advice at "
-      <> B.stringUtf8 (D.makeNakedLink "optimize")
-      <> " for better performance and smaller assets.')"
+      "serial.print('Compiled in DEV mode.')"
     Mode.Dev (Just _) ->
-      "serial.print('Compiled in DEV mode. Follow the advice at "
-      <> B.stringUtf8 (D.makeNakedLink "optimize")
-      <> " for better performance and smaller assets.')'"
+      "serial.print('Compiled in DEV mode.')"
 
 -- GRAPH TRAVERSAL STATE
 data State =
@@ -72,7 +68,7 @@ data State =
     , _revBuilders :: [B.Builder]
     , _seenGlobals :: Set.Set Opt.Global
     }
-  
+
 -- ADD DEPENDENCIES
 addGlobal :: Mode.Mode -> Graph -> State -> Opt.Global -> State
 addGlobal mode graph state@(State revKernels builders seen) global =
@@ -93,7 +89,7 @@ addGlobalHelp mode graph global state =
       addStmt (addDeps deps state) (
         var global (Expr.generate expr)
       )
- 
+
 
 addStmt :: State -> JS.Stmt -> State
 addStmt state stmt =
