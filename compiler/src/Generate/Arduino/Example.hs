@@ -7,13 +7,13 @@ module Generate.Arduino.Example
   , test3
   ) where
 
-import           Data.ByteString.Builder   as B
-import           Data.ByteString.Lazy.UTF8 (toString)
+import Data.ByteString.Builder as B
+import Data.ByteString.Lazy.UTF8 (toString)
 
 --Beispiel Konstruktor um die pretty Funktion zu testen.
 import Generate.Arduino.Builder
 
-import qualified Data.ByteString.Lazy      as L
+import qualified Data.ByteString.Lazy as L
 
 builderToString :: Builder -> L.ByteString
 builderToString builder = B.toLazyByteString builder
