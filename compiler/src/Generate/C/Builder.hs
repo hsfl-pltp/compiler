@@ -31,6 +31,7 @@ data Stmt
   | Var String Builder Expr
   | Decl String Builder
   | Const Expr
+  | Return Expr
   | IfStmt Expr Stmt Stmt
   | WhileStmt Expr Stmt
   | Function String Builder Stmt Stmt -- first Stmt is CommaStmt
@@ -67,6 +68,9 @@ pretty statement =
         , pretty elseStmt
         , "}\n"
         ]
+    Return expr ->
+      mconcat
+        ["return ", (prettyExpr expr)]
     WhileStmt condition loopStmt ->
       mconcat
         ["while(", (prettyExpr condition), ") {\n", (pretty loopStmt), "}"]

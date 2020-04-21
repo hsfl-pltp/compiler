@@ -20,6 +20,7 @@ import qualified Data.Index                      as Index
 import qualified Elm.Kernel                      as K
 import qualified Elm.ModuleName                  as ModuleName
 import qualified Generate.C.Builder              as JS
+import qualified Generate.C.Name                 as CName
 import qualified Generate.C.Expression           as Expr
 import qualified Generate.Mode                   as Mode
 import qualified Reporting.Doc                   as D
@@ -46,6 +47,10 @@ generate mode (Opt.GlobalGraph graph _) mains = undefined
   -- <> toMainExports mode mains
   -- <> "}(this));"
 
+addMain :: Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
+addMain mode graph home _ state =
+  addGlobal mode graph state (Opt.Global home "main")
+
 perfNote :: Mode.Mode -> B.Builder
 perfNote mode =
   case mode of
@@ -59,3 +64,46 @@ perfNote mode =
       "serial.print('Compiled in DEV mode. Follow the advice at "
       <> B.stringUtf8 (D.makeNakedLink "optimize")
       <> " for better performance and smaller assets.')'"
+
+-- GRAPH TRAVERSAL STATE
+data State =
+  State
+    { _revKernels :: [B.Builder]
+    , _revBuilders :: [B.Builder]
+    , _seenGlobals :: Set.Set Opt.Global
+    }
+  
+-- ADD DEPENDENCIES
+addGlobal :: Mode.Mode -> Graph -> State -> Opt.Global -> State
+addGlobal mode graph state@(State revKernels builders seen) global =
+  if Set.member global seen then
+    state
+  else
+    addGlobalHelp mode graph global $
+      State revKernels builders (Set.insert global seen)
+
+addGlobalHelp :: Mode.Mode -> Graph -> Opt.Global -> State -> State
+addGlobalHelp mode graph global state =
+  let
+    addDeps deps someState =
+      Set.foldl' (addGlobal mode graph) someState deps
+  in
+  case graph ! global of
+    Opt.Define expr deps ->
+      addStmt (addDeps deps state) (
+        var global (Expr.generate expr)
+      )
+ 
+
+addStmt :: State -> JS.Stmt -> State
+addStmt state stmt =
+  addBuilder state (JS.pretty stmt)
+
+
+addBuilder :: State -> B.Builder -> State
+addBuilder (State revKernels revBuilders seen) builder =
+  State revKernels (builder:revBuilders) seen
+
+var :: Opt.Global -> Expr.Code -> JS.Stmt
+var (Opt.Global home name) code =
+  JS.Var "any" (CName.fromGlobal home name) (Expr.codeToExpr code)

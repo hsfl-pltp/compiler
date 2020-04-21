@@ -3,7 +3,9 @@
 
 module Generate.C.Expression
   (
-  generate
+  generate,
+  codeToExpr,
+  Code
   ) where
 
 import           Data.ByteString.Builder as B
@@ -25,6 +27,23 @@ generate expr =
     Opt.Int int     -> C.Double (convertInt int)
     Opt.Float float -> C.Double (convertFloat float)
     _               -> error (show expr)
+
+data Code
+    = CExpr C.Expr
+    | CBlock [C.Stmt]
+
+
+codeToExpr :: Code -> C.Expr
+codeToExpr code =
+  case code of
+    CExpr expr ->
+      expr
+
+    CBlock [ C.Return expr ] ->
+      expr
+
+    -- CBlock stmts ->
+    --   JS.Call (JS.Function Nothing [] stmts) []
 
 
 convertString :: ES.String -> B.Builder
