@@ -106,4 +106,4 @@ addBuilder (State revKernels revBuilders seen) builder =
 
 var :: Opt.Global -> Expr.Code -> JS.Stmt
 var (Opt.Global home name) code =
-  JS.Var "any" (CName.fromGlobal home name) (Expr.codeToExpr code)
+  JS.Var "any" (CName.toBuilder (CName.fromGlobal home name)) (Expr.codeToExpr code)

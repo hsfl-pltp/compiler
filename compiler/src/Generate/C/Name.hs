@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Generate.C.Name
-  ( Name
+  ( Name(..)
     ,fromGlobal
   )
   where
