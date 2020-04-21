@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Generate.C.Name
+module Generate.Arduino.Name
   ( Name(..)
     ,fromGlobal
   )

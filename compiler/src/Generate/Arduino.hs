@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Generate.C
+module Generate.Arduino
   ( generate
   )
   where
@@ -19,9 +19,9 @@ import qualified AST.Optimized                   as Opt
 import qualified Data.Index                      as Index
 import qualified Elm.Kernel                      as K
 import qualified Elm.ModuleName                  as ModuleName
-import qualified Generate.C.Builder              as JS
-import qualified Generate.C.Name                 as CName
-import qualified Generate.C.Expression           as Expr
+import qualified Generate.Arduino.Builder as Arduino
+import qualified Generate.Arduino.Name as CName
+import qualified Generate.Arduino.Expression as Expr
 import qualified Generate.Mode                   as Mode
 import qualified Reporting.Doc                   as D
 import qualified Reporting.Render.Type           as RT
@@ -91,15 +91,15 @@ addGlobalHelp mode graph global state =
       )
 
 
-addStmt :: State -> JS.Stmt -> State
+addStmt :: State -> Arduino.Stmt -> State
 addStmt state stmt =
-  addBuilder state (JS.pretty stmt)
+  addBuilder state (Arduino.pretty stmt)
 
 
 addBuilder :: State -> B.Builder -> State
 addBuilder (State revKernels revBuilders seen) builder =
   State revKernels (builder:revBuilders) seen
 
-var :: Opt.Global -> Expr.Code -> JS.Stmt
+var :: Opt.Global -> Expr.Code -> Arduino.Stmt
 var (Opt.Global home name) code =
-  JS.Var "any" (CName.toBuilder (CName.fromGlobal home name)) (Expr.codeToExpr code)
+  Arduino.Var "any" (CName.toBuilder (CName.fromGlobal home name)) (Expr.codeToExpr code)

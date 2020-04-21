@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Generate.C.Expression
+module Generate.Arduino.Expression
   (
   generate,
   codeToExpr,
@@ -11,7 +11,7 @@ module Generate.C.Expression
 import           Data.ByteString.Builder as B
 
 import qualified AST.Optimized           as Opt
-import qualified Generate.C.Builder      as C
+import qualified Generate.Arduino.Builder as C
 
 import qualified Elm.Float               as EF
 import qualified Elm.String              as ES

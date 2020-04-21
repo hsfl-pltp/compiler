@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Generate.C.Builder
+module Generate.Arduino.Builder
   ( Expr(..)
   , pretty
   , Stmt(..)

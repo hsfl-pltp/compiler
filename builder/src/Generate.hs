@@ -28,7 +28,7 @@ import qualified Elm.Interface             as I
 import qualified Elm.ModuleName            as ModuleName
 import qualified Elm.Package               as Pkg
 import qualified File
-import qualified Generate.C                as C
+import qualified Generate.Arduino as Arduino
 import qualified Generate.JavaScript       as JS
 import qualified Generate.Mode             as Mode
 import qualified Nitpick.Debug             as Nitpick
@@ -95,7 +95,7 @@ debugArduino root details (Build.Artifacts pkg ifaces roots modules) =
       let mode = Mode.Dev (Just types)
       let graph = objectsToGlobalGraph objects
       let mains = gatherMains pkg objects roots
-      return (C.generate mode graph mains)
+      return (Arduino.generate mode graph mains)
 
 
 -- CHECK FOR DEBUG

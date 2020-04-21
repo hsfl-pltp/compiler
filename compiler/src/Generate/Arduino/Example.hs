@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Generate.C.Example
+module Generate.Arduino.Example
   ( test1
   , test2
   , test3
@@ -11,7 +11,7 @@ import           Data.ByteString.Builder   as B
 import           Data.ByteString.Lazy.UTF8 (toString)
 
 --Beispiel Konstruktor um die pretty Funktion zu testen.
-import           Generate.C.Builder
+import Generate.Arduino.Builder
 
 import qualified Data.ByteString.Lazy      as L
 
