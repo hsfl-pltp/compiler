@@ -87,12 +87,10 @@ repl root details ansi (Build.ReplArtifacts home modules localizer annotations) 
   return $
     JS.generateForRepl ansi localizer graph home name (annotations ! name)
 
-debugArduino :: FilePath -> Details.Details -> Build.Artifacts -> Task B.Builder
-debugArduino root details (Build.Artifacts pkg ifaces roots modules) = do
-  loading <- loadObjects root details modules
-  types <- loadTypes root ifaces modules
-  objects <- finalizeObjects loading
-  let mode = Mode.Dev (Just types)
+devArduino :: FilePath -> Details.Details -> Build.Artifacts -> Task B.Builder
+devArduino root details (Build.Artifacts pkg _ roots modules) = do
+  objects <- finalizeObjects =<< loadObjects root details modules
+  let mode = Mode.Dev Nothing
   let graph = objectsToGlobalGraph objects
   let mains = gatherMains pkg objects roots
   return (Arduino.generate mode graph mains)
