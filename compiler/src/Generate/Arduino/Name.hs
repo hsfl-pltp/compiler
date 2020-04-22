@@ -10,6 +10,7 @@ module Generate.Arduino.Name
 import qualified Data.ByteString.Builder as B
 import Data.Monoid ((<>))
 import qualified Data.Name as Name
+import qualified Data.Set as Set
 import qualified Data.Utf8 as Utf8
 import Data.Word (Word8)
 
@@ -36,8 +37,7 @@ homeToBuilder (ModuleName.Canonical (Pkg.Name author project) home) =
   Utf8.toEscapedBuilder 0x2D 0x5F project {- - -}
    {- _ -}
    <>
-  usd <>
-  Utf8.toEscapedBuilder 0x2E 0x24 home {- . -}
+  usd <> Utf8.toEscapedBuilder 0x2E 0x24 home
    {- $ -}
 
 -- TEMPORARY NAMES
