@@ -279,7 +279,7 @@ output =
     , _plural = "output files"
     , _parser = parseOutput
     , _suggest = \_ -> return []
-    , _examples = \_ -> return [ "elm.js", "index.html", "/dev/null" ]
+    , _examples = \_ -> return ["elm.js", "index.html", "elm.ino", "/dev/null"]
     }
 
 parseOutput :: String -> Maybe Output
