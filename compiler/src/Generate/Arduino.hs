@@ -33,7 +33,7 @@ type Graph = Map.Map Opt.Global Opt.Node
 type Mains = Map.Map ModuleName.Canonical Opt.Main
 
 generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
-generate mode (Opt.GlobalGraph graph _) mains = undefined
+generate mode (Opt.GlobalGraph graph _) mains = perfNote mode
   -- let
   --   state = Map.foldrWithKey (addMain mode graph) emptyState mains
   -- in
