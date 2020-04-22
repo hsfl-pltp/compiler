@@ -54,7 +54,7 @@ perfNote mode =
   case mode of
     Mode.Prod _ -> ""
     Mode.Dev Nothing -> "serial.print('Compiled in DEV mode.')"
-    Mode.Dev (Just _) -> "serial.print('Compiled in DEV mode.')"
+    Mode.Dev (Just _) -> "serial.print('Compiled in DEBUG mode.')"
 
 -- GRAPH TRAVERSAL STATE
 data State =
