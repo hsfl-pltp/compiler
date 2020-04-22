@@ -129,7 +129,7 @@ Executable elm
 
         -- from compiler/
         AST.Canonical
-        AST.Optimized    
+        AST.Optimized
         AST.Source
         AST.Utils.Binop
         AST.Utils.Shader
@@ -150,6 +150,7 @@ Executable elm
         Generate.JavaScript.Expression
         Generate.JavaScript.Functions
         Generate.JavaScript.Name
+        Generate.Arduino
         Generate.Arduino.Builder
         Generate.Arduino.Expression
         Generate.Mode
