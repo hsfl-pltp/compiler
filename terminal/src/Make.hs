@@ -109,13 +109,14 @@ runHelp root paths style (Flags debug optimize maybeOutput _ maybeDocs) =
                 target
                 (Html.sandwich name builder)
                 (NE.List name [])
-            Just (Arduino target) ->
-              case getNoMains artifacts of
-                [] -> do
-                  builder <- toBuilderArduino root details desiredMode artifacts
-                  generate style target builder (Build.getRootNames artifacts)
-                name:names ->
-                  Task.throw (Exit.MakeNonMainFilesIntoJavaScript name names)
+            Just (Arduino target)
+              -- case getNoMains artifacts of
+                -- [] -> do
+             -> do
+              builder <- toBuilderArduino root details desiredMode artifacts
+              generate style target builder (Build.getRootNames artifacts)
+                -- name:names ->
+                  -- Task.throw (Exit.MakeNonMainFilesIntoJavaScript name names)
 
 -- GET INFORMATION
 getStyle :: Maybe ReportType -> IO Reporting.Style
