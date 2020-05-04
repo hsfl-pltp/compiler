@@ -4,7 +4,7 @@ module Generate
   , dev
   , prod
   , repl
-  , debugArduino
+  , devArduino
   )
   where
 
@@ -87,8 +87,8 @@ repl root details ansi (Build.ReplArtifacts home modules localizer annotations) 
       return $ JS.generateForRepl ansi localizer graph home name (annotations ! name)
 
 
-debugArduino :: FilePath -> Details.Details -> Build.Artifacts -> Task B.Builder
-debugArduino root details (Build.Artifacts pkg ifaces roots modules) =
+devArduino :: FilePath -> Details.Details -> Build.Artifacts -> Task B.Builder
+devArduino root details (Build.Artifacts pkg ifaces roots modules) =
   do  loading <- loadObjects root details modules
       types   <- loadTypes root ifaces modules
       objects <- finalizeObjects loading
