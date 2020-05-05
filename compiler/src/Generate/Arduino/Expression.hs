@@ -44,6 +44,12 @@ codeToExpr code =
     -- CBlock stmts ->
     --   JS.Call (JS.Function Nothing [] stmts) []
 
+codeToStmt :: Code -> C.Stmt
+codeToStmt code =
+  case code of
+    CExpr expr -> C.Return expr
+    CBlock [stmt] -> stmt
+
 convertString :: ES.String -> B.Builder
 convertString string = Utf8.toBuilder string
 
