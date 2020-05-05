@@ -106,8 +106,6 @@ Executable worker
         Generate.JavaScript.Expression
         Generate.JavaScript.Functions
         Generate.JavaScript.Name
-        Generate.C.Builder
-        Generate.C.Expression
         Generate.Mode
         Http
         Json.Decode
