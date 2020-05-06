@@ -106,6 +106,10 @@ Executable worker
         Generate.JavaScript.Expression
         Generate.JavaScript.Functions
         Generate.JavaScript.Name
+        Generate.Arduino
+        Generate.Arduino.Builder
+        Generate.Arduino.Expression
+        Generate.Arduino.Name        
         Generate.Mode
         Http
         Json.Decode
