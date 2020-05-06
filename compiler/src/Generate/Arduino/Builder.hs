@@ -4,10 +4,12 @@
 module Generate.Arduino.Builder
   ( Expr(..)
   , pretty
+  , prettyExpr
   , Stmt(..)
   , PrefixOp(..)
   ) where
-
+import qualified Generate.Arduino.Name as Name
+import Generate.Arduino.Name (Name)
 import Data.ByteString.Builder as B
 import qualified Data.List as List
 
@@ -16,13 +18,17 @@ data Expr
   = String Builder
   | Comma [Expr]
   | Null
+  | Ref Name
   | Bool Bool
   | Integer Builder
+  | Int Int
   | Double Builder
   | If Expr Expr Expr
   | While Expr Expr Expr
   | Prefix PrefixOp Expr
+  | Call Expr [Expr]
   | Infix InfixOp Expr Expr
+  | Function (Maybe Name) [Name] [Stmt]
 
 -- STATEMENTS
 data Stmt
@@ -34,7 +40,7 @@ data Stmt
   | Return Expr
   | IfStmt Expr Stmt Stmt
   | WhileStmt Expr Stmt
-  | Function String Builder Stmt Stmt -- first Stmt is CommaStmt
+  | FunctionStmt Name [Name] [Stmt]
   | CommaStmt [Stmt] -- [Stmt] is Decl
 
 -- Converts a datatype in form of a String to the equivelant C-datatype.
@@ -74,18 +80,21 @@ pretty statement =
         ["while(", (prettyExpr condition), ") {\n", (pretty loopStmt), "}"]
     CommaStmt commastmt ->
       mconcat (List.intersperse ", " (map pretty commastmt))
-    Function dataType name commastmt body ->
-      mconcat
-        [ prettyDataType dataType
-        , " "
-        , name
-        , "("
-        , pretty commastmt
-        , ") {"
-        , pretty body
-        , "}"
-        ]
     EmptyStmt -> error "Not supported EmptyStmt"
+    FunctionStmt name args stmts ->
+      mconcat
+        ["void "
+        ,Name.toBuilder name 
+        , "(" 
+        , commaSep (map Name.toBuilder args)
+        , ") {\n"
+        , fromStmtBlock stmts
+        , "}\n"
+        ]
+
+fromStmtBlock :: [Stmt] -> Builder
+fromStmtBlock stmts =
+  mconcat (map pretty stmts)
 
 --Converts an argument of the type Expr into a String.
 prettyExpr :: Expr -> Builder
@@ -99,6 +108,8 @@ prettyExpr expression =
       mconcat
         [prettyExpr expr1, " ", prettyExpr infixExpr, " ", prettyExpr expr2]
     Null -> "null"
+    Int n -> B.intDec n 
+    Ref name -> Name.toBuilder name
     Integer integer -> integer
     Double double -> double
     Infix infixoperator expr1 expr2 ->
@@ -114,6 +125,21 @@ prettyExpr expression =
     String _ -> error "Not supported String"
     Comma _ -> error "Not supported Comma"
     While _ _ _ -> error "Not supported While"
+    Function maybeName args stmts ->
+      mconcat
+        ["void "
+          , maybe mempty Name.toBuilder maybeName 
+          ,  "(" <> commaSep (map Name.toBuilder args) 
+          , ") {\n"
+          ,  fromStmtBlock stmts
+          , "}"
+        ]
+
+
+
+commaSep :: [Builder] -> Builder
+commaSep builders =
+  mconcat (List.intersperse ", " builders)
 
 data InfixOp
   = OpAdd -- +

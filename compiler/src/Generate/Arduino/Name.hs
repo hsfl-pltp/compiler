@@ -5,6 +5,7 @@ module Generate.Arduino.Name
   ( Name(..)
   , fromGlobal
   , fromLocal
+  , fromKernel
   ) where
 
 import qualified Data.ByteString.Builder as B
@@ -39,6 +40,10 @@ homeToBuilder (ModuleName.Canonical (Pkg.Name author project) home) =
    <>
   usd <> Utf8.toEscapedBuilder 0x2E 0x24 home
    {- $ -}
+
+fromKernel :: Name.Name -> Name.Name -> Name
+fromKernel home name =
+  Name ("_" <> Name.toBuilder home <> "_" <> Name.toBuilder name)
 
 -- TEMPORARY NAMES
 usd :: B.Builder
