@@ -8,10 +8,11 @@ module Generate.Arduino.Builder
   , Stmt(..)
   , PrefixOp(..)
   ) where
-import qualified Generate.Arduino.Name as Name
-import Generate.Arduino.Name (Name)
+
 import Data.ByteString.Builder as B
 import qualified Data.List as List
+import qualified Generate.Arduino.Name as Name
+import Generate.Arduino.Name (Name)
 
 -- Expressions
 data Expr
@@ -53,6 +54,8 @@ prettyDataType dataType =
     "String" -> "string"
     "Bool" -> "bool"
     "Void" -> "void"
+    -- Dummy case used because type information is missing
+    "any" -> "any"
 
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Stmt -> Builder
@@ -83,9 +86,9 @@ pretty statement =
     EmptyStmt -> error "Not supported EmptyStmt"
     FunctionStmt name args stmts ->
       mconcat
-        ["void "
-        ,Name.toBuilder name 
-        , "(" 
+        [ "void "
+        , Name.toBuilder name
+        , "("
         , commaSep (map Name.toBuilder args)
         , ") {\n"
         , fromStmtBlock stmts
@@ -93,8 +96,7 @@ pretty statement =
         ]
 
 fromStmtBlock :: [Stmt] -> Builder
-fromStmtBlock stmts =
-  mconcat (map pretty stmts)
+fromStmtBlock stmts = mconcat (map pretty stmts)
 
 --Converts an argument of the type Expr into a String.
 prettyExpr :: Expr -> Builder
@@ -108,7 +110,7 @@ prettyExpr expression =
       mconcat
         [prettyExpr expr1, " ", prettyExpr infixExpr, " ", prettyExpr expr2]
     Null -> "null"
-    Int n -> B.intDec n 
+    Int n -> B.intDec n
     Ref name -> Name.toBuilder name
     Integer integer -> integer
     Double double -> double
@@ -127,19 +129,16 @@ prettyExpr expression =
     While _ _ _ -> error "Not supported While"
     Function maybeName args stmts ->
       mconcat
-        ["void "
-          , maybe mempty Name.toBuilder maybeName 
-          ,  "(" <> commaSep (map Name.toBuilder args) 
-          , ") {\n"
-          ,  fromStmtBlock stmts
-          , "}"
+        [ "void "
+        , maybe mempty Name.toBuilder maybeName
+        , "(" <> commaSep (map Name.toBuilder args)
+        , ") {\n"
+        , fromStmtBlock stmts
+        , "}"
         ]
 
-
-
 commaSep :: [Builder] -> Builder
-commaSep builders =
-  mconcat (List.intersperse ", " builders)
+commaSep builders = mconcat (List.intersperse ", " builders)
 
 data InfixOp
   = OpAdd -- +
