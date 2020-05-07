@@ -226,7 +226,14 @@ addDefHelp region annotations home name args body graph@(Opt.LocalGraph _ nodes 
                  (Just main)
                  nodes
                  (Map.unionWith (+) fields fieldCounts)
-          in case Type.deepDealias tipe of
+          in case Type.deepDealias tipe
+      -- This case supports main :: Int
+                   of
+               Can.TType hm nm []
+                 | hm == ModuleName.basics && nm == Name.int ->
+                   Result.ok $
+                   addMain $
+                   Names.run $ Names.registerKernel Name.virtualDom Opt.Static
                Can.TType hm nm [_]
                  | hm == ModuleName.virtualDom && nm == Name.node ->
                    Result.ok $
