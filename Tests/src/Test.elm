@@ -1,6 +1,6 @@
 module Test exposing (..)
 
 
-x : Int
-x =
+main : Int
+main =
     1
