@@ -33,16 +33,13 @@ type Graph = Map.Map Opt.Global Opt.Node
 type Mains = Map.Map ModuleName.Canonical Opt.Main
 
 generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
-generate mode (Opt.GlobalGraph graph _) mains = 
-  let
-    state = Map.foldrWithKey (addMain mode graph) emptyState mains
-  in
-      "(function(scope){\n'use strict';"
+generate mode (Opt.GlobalGraph graph _) mains =
+  let state = Map.foldrWithKey (addMain mode graph) emptyState mains
+   in "(function(scope){\n'use strict';"
       -- <> Functions.functions
-      <> perfNote mode
-      <> stateToBuilder state
-      <> toMainExports mode mains
-      <> "}(this));"
+       <>
+      perfNote mode <>
+      stateToBuilder state <> toMainExports mode mains <> "}(this));"
 
 addMain ::
      Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
@@ -59,12 +56,14 @@ perfNote mode =
 -- GRAPH TRAVERSAL STATE
 emptyState :: State
 emptyState = State mempty [] Set.empty
+
 data State =
   State
     { _revKernels :: [B.Builder]
     , _revBuilders :: [B.Builder]
     , _seenGlobals :: Set.Set Opt.Global
     }
+
 stateToBuilder :: State -> B.Builder
 stateToBuilder (State revKernels revBuilders _) =
   prependBuilders revKernels (prependBuilders revBuilders mempty)
@@ -72,6 +71,7 @@ stateToBuilder (State revKernels revBuilders _) =
 prependBuilders :: [B.Builder] -> B.Builder -> B.Builder
 prependBuilders revBuilders monolith =
   List.foldl' (\m b -> b <> m) monolith revBuilders
+
 -- ADD DEPENDENCIES
 addGlobal :: Mode.Mode -> Graph -> State -> Opt.Global -> State
 addGlobal mode graph state@(State revKernels builders seen) global =
@@ -86,6 +86,8 @@ addGlobalHelp mode graph global state =
    in case graph ! global of
         Opt.Define expr deps ->
           addStmt (addDeps deps state) (var global (Expr.generate expr))
+    -- For testing purposes we ignore the kernel code
+        Opt.Kernel chunks deps -> state
 
 addStmt :: State -> Arduino.Stmt -> State
 addStmt state stmt = addBuilder state (Arduino.pretty stmt)
@@ -100,6 +102,7 @@ var (Opt.Global home name) code =
     "any"
     (ArduinoName.toBuilder (ArduinoName.fromGlobal home name))
     (Expr.codeToExpr code)
+
 -- MAIN EXPORTS
 toMainExports :: Mode.Mode -> Mains -> B.Builder
 toMainExports mode mains =
@@ -160,6 +163,6 @@ merge (Trie main1 subs1) (Trie main2 subs2) =
 checkedMerge :: Maybe a -> Maybe a -> Maybe a
 checkedMerge a b =
   case (a, b) of
-    (Nothing, main)  -> main
-    (main, Nothing)  -> main
+    (Nothing, main) -> main
+    (main, Nothing) -> main
     (Just _, Just _) -> error "cannot have two modules with the same name"
