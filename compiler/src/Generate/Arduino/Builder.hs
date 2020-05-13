@@ -114,7 +114,8 @@ prettyExpr expression =
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr expr1]
-    Call _ _ -> error "Not supported Call"
+    Call expr1 exprs ->
+      mconcat [prettyExpr expr1, " ", fromExprBlock exprs]
     Infix infixoperator expr1 expr2 ->
       mconcat
         [ prettyExpr expr1
@@ -135,6 +136,9 @@ prettyExpr expression =
 
 commaSep :: [Builder] -> Builder
 commaSep builders = mconcat (List.intersperse ", " builders)
+
+fromExprBlock :: [Expr] -> Builder
+fromExprBlock exprs = mconcat (map prettyExpr exprs)
 
 data InfixOp
   = OpAdd -- +
