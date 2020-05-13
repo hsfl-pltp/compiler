@@ -90,6 +90,7 @@ addGlobalHelp mode graph global state =
     -- For testing purposes we ignore the kernel code
         Opt.Kernel chunks deps -- T.trace (show (Opt.Kernel chunks deps)) state
          -> state
+        expr -> error ("unsupported argument: " ++ show expr)
 
 addStmt :: State -> Arduino.Stmt -> State
 addStmt state stmt = addBuilder state (Arduino.pretty stmt)
