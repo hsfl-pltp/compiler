@@ -12,6 +12,7 @@ import Data.Monoid ((<>))
 import qualified Data.Name as Name
 import qualified Data.Set as Set
 import qualified Data.Utf8 as Utf8
+import qualified Debug.Trace as T
 import Prelude hiding (cycle, print)
 
 import qualified AST.Canonical as Can
@@ -87,7 +88,8 @@ addGlobalHelp mode graph global state =
         Opt.Define expr deps ->
           addStmt (addDeps deps state) (var global (Expr.generate expr))
     -- For testing purposes we ignore the kernel code
-        Opt.Kernel chunks deps -> state
+        Opt.Kernel chunks deps -- T.trace (show (Opt.Kernel chunks deps)) state
+         -> state
 
 addStmt :: State -> Arduino.Stmt -> State
 addStmt state stmt = addBuilder state (Arduino.pretty stmt)
