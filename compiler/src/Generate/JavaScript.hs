@@ -212,7 +212,7 @@ addGlobalHelp mode graph global state =
           generateManager mode graph global effectsType state
         Opt.Kernel chunks deps ->
           if isDebugger global && not (Mode.isDebug mode)
-            then state
+            then D.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) state --remove all except state
             else addKernel (addDeps deps state) (generateKernel mode chunks)
         Opt.Enum index -> addStmt state (generateEnum mode global index)
         Opt.Box ->
