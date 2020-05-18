@@ -7,6 +7,7 @@ module Generate.Arduino.Builder
   , prettyExpr
   , Stmt(..)
   , PrefixOp(..)
+  , InfixOp(..)
   ) where
 
 import Data.ByteString.Builder as B
