@@ -87,6 +87,10 @@ toPublicName (ModuleName.Canonical _ home) name =
 
 newtype Types =
   Types (Map.Map ModuleName.Canonical Types_)
+  deriving (Show)
+ 
+
+
   -- PERF profile Opt.Global representation
   -- current representation needs less allocation
   -- but maybe the lookup is much worse
@@ -97,6 +101,9 @@ data Types_ =
     { _union_info :: Map.Map Name.Name Can.Union
     , _alias_info :: Map.Map Name.Name Can.Alias
     }
+  deriving (Show)
+
+
 
 
 mergeMany :: [Types] -> Types
@@ -204,6 +211,7 @@ data Deps =
     { _aliases :: Set.Set Opt.Global
     , _unions :: Set.Set Opt.Global
     }
+  deriving (Show)
 
 
 {-# NOINLINE noDeps #-}

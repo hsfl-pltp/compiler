@@ -40,6 +40,7 @@ data Type
   | Record [(Name.Name, Type)] (Maybe Name.Name)
   | Unit
   | Tuple Type Type [Type]
+   deriving (Show)
 
 
 data DebugMetadata =
@@ -50,8 +51,9 @@ data DebugMetadata =
     }
 
 
-data Alias = Alias Name.Name [Name.Name] Type
-data Union = Union Name.Name [Name.Name] [(Name.Name, [Type])]
+
+data Alias = Alias Name.Name [Name.Name] Type  deriving (Show)
+data Union = Union Name.Name [Name.Name] [(Name.Name, [Type])]  deriving (Show)
 
 
 

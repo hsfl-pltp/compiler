@@ -157,7 +157,7 @@ data PatternCtorArg =
 -- TYPES
 data Annotation =
   Forall FreeVars Type
-  deriving (Eq)
+  deriving (Eq, Show)
 
 type FreeVars = Map.Map Name ()
 
@@ -169,16 +169,16 @@ data Type
   | TUnit
   | TTuple Type Type (Maybe Type)
   | TAlias ModuleName.Canonical Name [(Name, Type)] AliasType
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data AliasType
   = Holey Type
   | Filled Type
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data FieldType =
   FieldType {-# UNPACK #-}!Word16 Type
-  deriving (Eq)
+  deriving (Eq, Show)
 
 -- NOTE: The Word16 marks the source order, but it may not be available
 -- for every canonical type. For example, if the canonical type is inferred
@@ -205,11 +205,11 @@ data Module =
 
 data Alias =
   Alias [Name] Type
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data Binop =
   Binop_ Binop.Associativity Binop.Precedence Name
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data Union =
   Union
@@ -218,7 +218,7 @@ data Union =
     , _u_numAlts :: Int -- CACHE numAlts for exhaustiveness checking
     , _u_opts    :: CtorOpts -- CACHE which optimizations are available
     }
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data CtorOpts
   = Normal
@@ -228,7 +228,7 @@ data CtorOpts
 
 data Ctor =
   Ctor Name Index.ZeroBased Int [Type] -- CACHE length args
-  deriving (Eq)
+  deriving (Eq, Show)
 
 -- EXPORTS
 data Exports
@@ -326,6 +326,7 @@ instance Binary Type where
       5 -> liftM4 TAlias get get get get
       6 -> liftM3 TType get get get
       n -> liftM3 TType get get (replicateM (fromIntegral (n - 7)) get)
+ 
 
 instance Binary AliasType where
   put aliasType =

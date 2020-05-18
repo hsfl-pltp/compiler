@@ -40,6 +40,7 @@ import qualified Nitpick.Debug as Nitpick
 import qualified Reporting.Exit as Exit
 import qualified Reporting.Task as Task
 import qualified Stuff
+import qualified Debug.Trace as T
 
 -- NOTE: This is used by Make, Repl, and Reactor right now. But it may be
 -- desireable to have Repl and Reactor to keep foreign objects in memory
@@ -88,12 +89,13 @@ repl root details ansi (Build.ReplArtifacts home modules localizer annotations) 
     JS.generateForRepl ansi localizer graph home name (annotations ! name)
 
 devArduino :: FilePath -> Details.Details -> Build.Artifacts -> Task B.Builder
-devArduino root details (Build.Artifacts pkg _ roots modules) = do
+devArduino root details (Build.Artifacts pkg ifaces roots modules) = do
   objects <- finalizeObjects =<< loadObjects root details modules
+  types <- loadTypes root ifaces modules
   let mode = Mode.Dev Nothing
   let graph = objectsToGlobalGraph objects
   let mains = gatherMains pkg objects roots
-  return (Arduino.generate mode graph mains)
+  T.trace (show types) (return (Arduino.generate mode graph mains))
 
 -- CHECK FOR DEBUG
 checkForDebugUses :: Objects -> Task ()
@@ -188,6 +190,8 @@ loadTypes root ifaces modules =
     case sequence results of
       Just ts -> return (Right (Extract.merge foreigns (Extract.mergeMany ts)))
       Nothing -> return (Left Exit.GenerateCannotLoadArtifacts)
+ 
+  
 
 loadTypesHelp :: FilePath -> Build.Module -> IO (MVar (Maybe Extract.Types))
 loadTypesHelp root modul =
