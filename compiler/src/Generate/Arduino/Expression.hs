@@ -16,11 +16,14 @@ import qualified Elm.Compiler.Type as Type
 import qualified AST.Optimized as Opt
 import qualified Generate.Arduino.Builder as Arduino
 import qualified Data.Name as Name
+import qualified Data.List as List
+import qualified Data.IntMap as IntMap
 import qualified Elm.Float as EF
 import qualified Elm.String as ES
 import qualified Generate.Arduino.Name as ArduinoName
 import qualified Data.Utf8 as Utf8
 import qualified Generate.Mode as Mode
+import qualified Elm.Package as Pkg
 
 generateArduinoExpr :: Opt.Expr -> Arduino.Expr
 generateArduinoExpr expression =
@@ -35,6 +38,8 @@ generate expr =
     Opt.Int int -> CExpr (Arduino.Double (convertInt int))
     Opt.Float float -> CExpr (Arduino.Double (convertFloat float))
     Opt.If branches final -> generateIf branches final
+    Opt.VarKernel home name -> CExpr (Arduino.Ref (ArduinoName.fromKernel home name))
+    Opt.Call func args -> CExpr (generateCall func args)
     _ -> error (show expr)
 
 data Code
@@ -86,6 +91,124 @@ generateIf givenBranches givenFinal =
   else
     CExpr $ foldr addExprIf (codeToExpr finalCode) branchExprs
 
+generateCall :: Opt.Expr -> [Opt.Expr] -> Arduino.Expr
+generateCall func args  =
+  case func of
+    Opt.VarGlobal global@(Opt.Global (ModuleName.Canonical pkg _) _) | pkg == Pkg.core ->
+      generateCoreCall global args
+
+    Opt.VarBox _ ->
+      case args of
+        [arg] ->
+          generateArduinoExpr arg
+        _ ->
+          generateCallHelp func args
+    _ ->
+      generateCallHelp func args
+
+generateCallHelp :: Opt.Expr -> [Opt.Expr] -> Arduino.Expr
+generateCallHelp func args =
+  generateNormalCall (generateArduinoExpr func) (map (generateArduinoExpr) args)
+
+generateNormalCall :: Arduino.Expr -> [Arduino.Expr] -> Arduino.Expr
+generateNormalCall func args =
+  case IntMap.lookup (length args) callHelpers of
+    Just helper ->
+      Arduino.Call helper (func:args)
+
+    Nothing ->
+      List.foldl' (\f a -> Arduino.Call f [a]) func args
+
+callHelpers :: IntMap.IntMap Arduino.Expr
+callHelpers =
+  IntMap.fromList (map (\n -> (n, Arduino.Ref (ArduinoName.makeA n))) [2..9])
+
+generateGlobalCall :: ModuleName.Canonical -> Name.Name -> [Arduino.Expr] -> Arduino.Expr
+generateGlobalCall home name args =
+  generateNormalCall (Arduino.Ref (ArduinoName.fromGlobal home name)) args
+
+generateCoreCall :: Opt.Global -> [Opt.Expr] -> Arduino.Expr
+generateCoreCall (Opt.Global home@(ModuleName.Canonical _ moduleName) name) args =
+    if moduleName == Name.basics then
+      generateBasicsCall home name args
+    else
+      generateGlobalCall home name (map (generateArduinoExpr) args)
+
+generateBasicsCall :: ModuleName.Canonical -> Name.Name -> [Opt.Expr] -> Arduino.Expr
+generateBasicsCall home name args =
+  case args of
+    [elmArg] ->
+      let arg = generateArduinoExpr elmArg in
+        case name of
+          "not"      -> Arduino.Prefix Arduino.PrefixNot arg
+          "negate"   -> Arduino.Prefix Arduino.PrefixNegate arg
+          "toFloat"  -> arg
+          _          -> generateGlobalCall home name [arg]
+
+    [elmLeft, elmRight] ->
+      case name of
+        -- NOTE: removed "composeL" and "composeR" because of this issue:
+        -- https://github.com/elm/compiler/issues/1722
+        "append"   -> append elmLeft elmRight
+        "apL"      -> generateArduinoExpr (apply elmLeft elmRight)
+        "apR"      -> generateArduinoExpr (apply elmRight elmLeft)
+        _ ->
+          let
+            left = generateArduinoExpr elmLeft
+            right = generateArduinoExpr elmRight
+          in
+           case name of
+            "add"  -> Arduino.Infix Arduino.OpAdd left right
+            _      -> generateGlobalCall home name [left, right]
+
+    _ ->
+      generateGlobalCall home name (map (generateArduinoExpr) args)
+
+
+apply :: Opt.Expr -> Opt.Expr -> Opt.Expr
+apply func value =
+  case func of
+    Opt.Accessor field ->
+      Opt.Access value field
+
+    Opt.Call f args ->
+      Opt.Call f (args ++ [value])
+
+    _ ->
+      Opt.Call func [value]
+
+append :: Opt.Expr -> Opt.Expr -> Arduino.Expr
+append left right =
+  let seqs = generateArduinoExpr left : toSeqs right in
+  if any isStringLiteral seqs then
+    foldr1 (Arduino.Infix Arduino.OpAdd) seqs
+  else
+    foldr1 arduinoAppend seqs
+
+
+arduinoAppend :: Arduino.Expr -> Arduino.Expr -> Arduino.Expr
+arduinoAppend a b =
+  Arduino.Call (Arduino.Ref (ArduinoName.fromKernel Name.utils "ap")) [a, b]
+
+
+toSeqs :: Opt.Expr -> [Arduino.Expr]
+toSeqs expr =
+  case expr of
+    Opt.Call (Opt.VarGlobal (Opt.Global home "append")) [left, right]
+      | home == ModuleName.basics ->
+        generateArduinoExpr left : toSeqs right
+
+    _ ->
+      [generateArduinoExpr expr]
+
+isStringLiteral :: Arduino.Expr -> Bool
+isStringLiteral expr =
+  case expr of
+    Arduino.String _ ->
+      True
+
+    _ ->
+      False
 
 addExprIf :: (Arduino.Expr, Code) -> Arduino.Expr -> Arduino.Expr
 addExprIf (condition, branch) final =
@@ -164,5 +287,3 @@ generateMain mode home main =
     --     [ "versions" ==> Encode.object [ "elm" ==> V.encode V.compiler ]
     --     , "types"    ==> Type.encodeMetadata (Extract.fromMsg interfaces msgType)
     --     ]
-
- 

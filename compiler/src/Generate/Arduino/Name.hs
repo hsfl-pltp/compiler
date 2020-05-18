@@ -6,6 +6,7 @@ module Generate.Arduino.Name
   , fromGlobal
   , fromLocal
   , fromKernel
+  , makeA
   ) where
 
 import qualified Data.ByteString.Builder as B
@@ -59,6 +60,10 @@ fromLocal name =
 {-# NOINLINE reservedNames #-}
 reservedNames :: Set.Set Name.Name
 reservedNames = Set.union cReservedWords elmReservedWords
+
+makeA :: Int -> Name
+makeA n =
+  Name ("A" <> B.intDec n)
 
 cReservedWords :: Set.Set Name.Name
 cReservedWords =
