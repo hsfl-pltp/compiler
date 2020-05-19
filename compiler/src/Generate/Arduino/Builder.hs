@@ -54,7 +54,7 @@ prettyDataType dataType =
     "Double" -> "double"
     "Void" -> "void"
     -- Dummy case used because type information is missing
-    "any" -> "any"
+    "any" -> "int"
 
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Stmt -> Builder
