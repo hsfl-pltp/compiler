@@ -4,28 +4,28 @@ module Generate.Arduino
   ( generate
   ) where
 
-import qualified Data.ByteString.Builder as B
-import qualified Data.List as List
-import Data.Map ((!))
-import qualified Data.Map as Map
-import Data.Monoid ((<>))
-import qualified Data.Name as Name
-import qualified Data.Set as Set
-import qualified Data.Utf8 as Utf8
-import qualified Debug.Trace as T
-import Prelude hiding (cycle, print)
+import qualified Data.ByteString.Builder         as B
+import qualified Data.List                       as List
+import           Data.Map                        ((!))
+import qualified Data.Map                        as Map
+import           Data.Monoid                     ((<>))
+import qualified Data.Name                       as Name
+import qualified Data.Set                        as Set
+import qualified Data.Utf8                       as Utf8
+import qualified Debug.Trace                     as T
+import           Prelude                         hiding (cycle, print)
 
-import qualified AST.Canonical as Can
-import qualified AST.Optimized as Opt
-import qualified Data.Index as Index
-import qualified Elm.Kernel as K
-import qualified Elm.ModuleName as ModuleName
-import qualified Generate.Arduino.Builder as Arduino
-import qualified Generate.Arduino.Expression as Expr
-import qualified Generate.Arduino.Name as ArduinoName
-import qualified Generate.Mode as Mode
-import qualified Reporting.Doc as D
-import qualified Reporting.Render.Type as RT
+import qualified AST.Canonical                   as Can
+import qualified AST.Optimized                   as Opt
+import qualified Data.Index                      as Index
+import qualified Elm.Kernel                      as K
+import qualified Elm.ModuleName                  as ModuleName
+import qualified Generate.Arduino.Builder        as Arduino
+import qualified Generate.Arduino.Expression     as Expr
+import qualified Generate.Arduino.Name           as ArduinoName
+import qualified Generate.Mode                   as Mode
+import qualified Reporting.Doc                   as D
+import qualified Reporting.Render.Type           as RT
 import qualified Reporting.Render.Type.Localizer as L
 
 -- GENERATE
@@ -36,11 +36,11 @@ type Mains = Map.Map ModuleName.Canonical Opt.Main
 generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
 generate mode (Opt.GlobalGraph graph _) mains =
   let state = Map.foldrWithKey (addMain mode graph) emptyState mains
-   in "(function(scope){\n'use strict';"
+   in -- "(function(scope){\n'use strict';"
       -- <> Functions.functions
-       <>
-      perfNote mode <>
-      stateToBuilder state <> toMainExports mode mains <> "}(this));"
+       -- <>
+      perfNote mode <> "\n" <>
+      stateToBuilder state -- <> toMainExports mode mains -- <> "}(this));"
 
 addMain ::
      Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
@@ -50,9 +50,9 @@ addMain mode graph home _ state =
 perfNote :: Mode.Mode -> B.Builder
 perfNote mode =
   case mode of
-    Mode.Prod _ -> ""
-    Mode.Dev Nothing -> "serial.print('Compiled in DEV mode.')"
-    Mode.Dev (Just _) -> "serial.print('Compiled in DEBUG mode.')"
+    Mode.Prod _       -> ""
+    Mode.Dev Nothing  -> "serial.print('Compiled in DEV mode.');"
+    Mode.Dev (Just _) -> "serial.print('Compiled in DEBUG mode.');"
 
 -- GRAPH TRAVERSAL STATE
 emptyState :: State
@@ -60,7 +60,7 @@ emptyState = State mempty [] Set.empty
 
 data State =
   State
-    { _revKernels :: [B.Builder]
+    { _revKernels  :: [B.Builder]
     , _revBuilders :: [B.Builder]
     , _seenGlobals :: Set.Set Opt.Global
     }
@@ -166,6 +166,6 @@ merge (Trie main1 subs1) (Trie main2 subs2) =
 checkedMerge :: Maybe a -> Maybe a -> Maybe a
 checkedMerge a b =
   case (a, b) of
-    (Nothing, main) -> main
-    (main, Nothing) -> main
+    (Nothing, main)  -> main
+    (main, Nothing)  -> main
     (Just _, Just _) -> error "cannot have two modules with the same name"
