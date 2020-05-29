@@ -116,7 +116,10 @@ prettyExpr expression =
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr expr1]
     Call expr1 exprs ->
-      mconcat [prettyExpr expr1, " ", fromExprBlock exprs]
+      mconcat [ prettyExpr expr1
+              , "("
+              , fromExprBlock exprs
+              , ")"]
     Infix infixoperator expr1 expr2 ->
       mconcat
         [ prettyExpr expr1
@@ -139,7 +142,8 @@ commaSep :: [Builder] -> Builder
 commaSep builders = mconcat (List.intersperse ", " builders)
 
 fromExprBlock :: [Expr] -> Builder
-fromExprBlock exprs = mconcat (map prettyExpr exprs)
+fromExprBlock exprs = mconcat (List.intersperse " ," (map prettyExpr exprs))
+
 
 data InfixOp
   = OpAdd -- +
