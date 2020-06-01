@@ -27,6 +27,7 @@ import qualified Generate.Mode                   as Mode
 import qualified Reporting.Doc                   as D
 import qualified Reporting.Render.Type           as RT
 import qualified Reporting.Render.Type.Localizer as L
+import qualified Generate.Boilerplate            as BP
 
 -- GENERATE
 type Graph = Map.Map Opt.Global Opt.Node
@@ -40,7 +41,8 @@ generate mode (Opt.GlobalGraph graph _) mains =
       -- <> Functions.functions
        -- <>
       perfNote mode <> "\n" <>
-      stateToBuilder state -- <> toMainExports mode mains -- <> "}(this));"
+      BP.sandwichArduino (stateToBuilder state) -- <> toMainExports mode mains -- <> "}(this));"
+
 
 addMain ::
      Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
