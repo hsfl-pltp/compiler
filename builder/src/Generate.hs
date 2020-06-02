@@ -95,7 +95,7 @@ devArduino root details (Build.Artifacts pkg ifaces roots modules) = do
   let mode = Mode.Dev Nothing
   let graph = objectsToGlobalGraph objects
   let mains = gatherMains pkg objects roots
-  T.trace (show types) (return (Arduino.generate mode graph mains))
+  T.trace ("TYPES_DEV_ARDUINO" ++ show types) (return (Arduino.generate mode graph mains))
 
 -- CHECK FOR DEBUG
 checkForDebugUses :: Objects -> Task ()

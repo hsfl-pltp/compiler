@@ -1,6 +1,9 @@
 module Test exposing (..)
 
-
 main : Int
 main =
-    modBy 1 2
+    if False then
+        1
+
+    else
+        0
