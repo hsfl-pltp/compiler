@@ -9,6 +9,7 @@ module Generate.Arduino.Expression
   ) where
 import qualified AST.Canonical as Can
 import qualified Elm.Version as V
+import qualified Reporting.Annotation as A
 import Data.ByteString.Builder as B
 import qualified Elm.ModuleName as ModuleName
 import qualified Elm.Compiler.Type.Extract as Extract
@@ -40,6 +41,7 @@ generate expr =
     Opt.If branches final -> generateIf branches final
     Opt.VarKernel home name -> CExpr (Arduino.Ref (ArduinoName.fromKernel home name))
     Opt.Call func args -> CExpr (generateCall func args)
+    Opt.VarDebug name home region unhandledValueName -> CExpr (generateDebug name home region unhandledValueName)
     _ -> error (show expr)
 
 data Code
@@ -272,6 +274,38 @@ generateMain mode home main =
 (#) func arg =
   Arduino.Call func [arg]
 
+generateDebug :: Name.Name -> ModuleName.Canonical -> A.Region -> Maybe Name.Name -> Arduino.Expr
+generateDebug name (ModuleName.Canonical _ home) region unhandledValueName =
+  if name /= "todo" then
+    Arduino.Ref (ArduinoName.fromGlobal ModuleName.debug name)
+  else
+    case unhandledValueName of
+      Nothing ->
+        Arduino.Call (Arduino.Ref (ArduinoName.fromKernel Name.debug "todo")) $
+          [ Arduino.String (Name.toBuilder home)
+          , regionToArduinoExpr region
+          ]
+
+      Just valueName ->
+        Arduino.Call (Arduino.Ref (ArduinoName.fromKernel Name.debug "todoCase")) $
+          [ Arduino.String (Name.toBuilder home)
+          , regionToArduinoExpr region
+          , Arduino.Ref (ArduinoName.fromLocal valueName)
+          ]
+
+regionToArduinoExpr :: A.Region -> Arduino.Expr
+regionToArduinoExpr (A.Region start end) =
+    Arduino.Object
+      [ ( ArduinoName.fromLocal "start", positionToArduinoExpr start )
+      , ( ArduinoName.fromLocal "end", positionToArduinoExpr end )
+      ]
+
+positionToArduinoExpr :: A.Position -> Arduino.Expr
+positionToArduinoExpr (A.Position line column) =
+    Arduino.Object
+      [ ( ArduinoName.fromLocal "line", Arduino.Int (fromIntegral line) )
+      , ( ArduinoName.fromLocal "column", Arduino.Int (fromIntegral column) )
+      ]
 
 -- toDebugMetadata :: Mode.Mode -> Can.Type -> Arduino.Expr
 -- toDebugMetadata mode msgType =

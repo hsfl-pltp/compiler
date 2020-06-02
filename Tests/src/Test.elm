@@ -3,4 +3,4 @@ module Test exposing (..)
 
 main : Int
 main =
-    modBy 1 2
+    Debug.log "test" (1 * 2)

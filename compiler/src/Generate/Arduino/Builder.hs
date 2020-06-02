@@ -27,6 +27,7 @@ data Expr
   | If Expr Expr Expr
   | While Expr Expr Expr
   | Prefix PrefixOp Expr
+  | Object [(Name, Expr)]
   | Call Expr [Expr]
   | Infix InfixOp Expr Expr
   | Function (Maybe Name) [Name] [Stmt]
@@ -99,7 +100,7 @@ fromStmtBlock stmts = mconcat (map pretty stmts)
 prettyExpr :: Expr -> Builder
 prettyExpr expression =
   case expression of
-    String _ -> error "Not supported String"
+    String string -> mconcat[string]
     Null -> "null"
     Ref name -> Name.toBuilder name
     Bool bool ->
