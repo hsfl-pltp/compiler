@@ -63,6 +63,7 @@ module Data.Name
   , _main
   , _Main
   , dollar
+  , connector
   , identity
   , replModule
   , replValueToPrint
@@ -479,6 +480,10 @@ _Main = fromChars "Main"
 {-# NOINLINE dollar #-}
 dollar :: Name
 dollar = fromChars "$"
+
+{-# NOINLINE connector #-}
+connector :: Name
+connector = fromChars "_"
 
 {-# NOINLINE identity #-}
 identity :: Name

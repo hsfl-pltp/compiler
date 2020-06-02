@@ -48,7 +48,7 @@ fromKernel home name =
 
 -- TEMPORARY NAMES
 usd :: B.Builder
-usd = Name.toBuilder Name.dollar
+usd = Name.toBuilder Name.connector
 
 fromLocal :: Name.Name -> Name
 fromLocal name =
