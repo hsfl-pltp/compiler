@@ -30,6 +30,7 @@ data Expr
   | Call Expr [Expr]
   | Infix InfixOp Expr Expr
   | Function (Maybe Name) [Name] [Stmt]
+  | Enum Name [Expr]
 
 
 
@@ -44,7 +45,7 @@ data Stmt
   | IfStmt Expr Stmt Stmt
   | WhileStmt Expr Stmt
   | FunctionStmt Name [Name] [Stmt]
-  | Enum Name [Expr]
+
  
 -- Converts a datatype in form of a String to the equivelant C-datatype.
 -- Also returned as a String.
@@ -95,8 +96,7 @@ pretty statement =
         , fromStmtBlock stmts
         , "}\n"
         ]
-    Enum name exprs ->
-      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : (map prettyExpr exprs)) : ["}"]) 
+
 
 fromStmtBlock :: [Stmt] -> Builder
 fromStmtBlock stmts = mconcat (map pretty stmts)
@@ -143,6 +143,8 @@ prettyExpr expression =
         , fromStmtBlock stmts
         , "}"
         ]
+    Enum name exprs ->
+      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : (map prettyExpr exprs)) : ["}"]) 
   
 
 commaSep :: [Builder] -> Builder
