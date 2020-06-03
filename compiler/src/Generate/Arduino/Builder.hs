@@ -97,7 +97,7 @@ pretty statement =
         , "}\n"
         ]
     Enum name exprs ->
-      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : (map prettyExpr exprs)) : ["}"]) 
+      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : (map prettyExpr exprs)) : ["}"])
 
 
 fromStmtBlock :: [Stmt] -> Builder
@@ -125,7 +125,7 @@ prettyExpr expression =
       mconcat [prettyPrefix prefixOperator, prettyExpr expr1]
     Call expr1 exprs ->
       mconcat [ prettyExpr expr1
-              , " ("
+              , "("
               , fromExprBlock exprs
               , ")"]
     Infix infixoperator expr1 expr2 ->
@@ -145,13 +145,13 @@ prettyExpr expression =
         , fromStmtBlock stmts
         , "}"
         ]
- 
+
 
 commaSep :: [Builder] -> Builder
 commaSep builders = mconcat (List.intersperse ", " builders)
 
 fromExprBlock :: [Expr] -> Builder
-fromExprBlock exprs = mconcat (List.intersperse "," (map prettyExpr exprs))
+fromExprBlock exprs = mconcat (List.intersperse ", " (map prettyExpr exprs))
 
 
 data InfixOp
