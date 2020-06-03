@@ -10,10 +10,10 @@ module Generate.Arduino.Builder
   , InfixOp(..)
   ) where
 
-import Data.ByteString.Builder as B
-import qualified Data.List as List
-import qualified Generate.Arduino.Name as Name
-import Generate.Arduino.Name (Name)
+import           Data.ByteString.Builder as B
+import qualified Data.List               as List
+import           Generate.Arduino.Name   (Name)
+import qualified Generate.Arduino.Name   as Name
 
 -- Expressions
 data Expr
@@ -52,14 +52,14 @@ data Stmt
 prettyDataType :: String -> Builder
 prettyDataType dataType =
   case dataType of
-    "String" -> "string"
-    "Bool" -> "bool"
+    "String"  -> "string"
+    "Bool"    -> "bool"
     "Integer" -> "int"
-    "Double" -> "double"
-    "Void" -> "void"
-    "Enum" -> "enum"
+    "Double"  -> "double"
+    "Void"    -> "void"
+    "Enum"    -> "enum"
     -- Dummy case used because type information is missing
-    "any" -> "int"
+    "any"     -> "int"
 
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Stmt -> Builder
@@ -107,12 +107,12 @@ fromStmtBlock stmts = mconcat (map pretty stmts)
 prettyExpr :: Expr -> Builder
 prettyExpr expression =
   case expression of
-    String string -> mconcat[string]
+    String string -> mconcat [ "\"", string, "\""]
     Null -> "null"
     Ref name -> Name.toBuilder name
     Bool bool ->
       case bool of
-        True -> "true"
+        True  -> "true"
         False -> "false"
     Integer integer -> integer
     Int n -> B.intDec n
@@ -183,29 +183,29 @@ data PrefixOp
 prettyInfix :: InfixOp -> Builder
 prettyInfix minfix =
   case minfix of
-    OpAdd -> " + "
-    OpSub -> " - "
-    OpMul -> " * " -- *
-    OpDiv -> " / " -- /
-    OpMod -> " % "
-    OpEq -> " == "
-    OpNe -> " != "
-    OpLt -> " < "
-    OpLe -> " <= "
-    OpGt -> " > "
-    OpGe -> " >= "
-    OpAnd -> " && "
-    OpOr -> " || "
+    OpAdd        -> " + "
+    OpSub        -> " - "
+    OpMul        -> " * " -- *
+    OpDiv        -> " / " -- /
+    OpMod        -> " % "
+    OpEq         -> " == "
+    OpNe         -> " != "
+    OpLt         -> " < "
+    OpLe         -> " <= "
+    OpGt         -> " > "
+    OpGe         -> " >= "
+    OpAnd        -> " && "
+    OpOr         -> " || "
     OpBitwiseAnd -> " & "
     OpBitwiseXor -> " ^ "
-    OpBitwiseOr -> " | "
-    OpLShift -> " << "
-    OpSpRShift -> " >> "
-    OpZfRShift -> " >>> "
+    OpBitwiseOr  -> " | "
+    OpLShift     -> " << "
+    OpSpRShift   -> " >> "
+    OpZfRShift   -> " >>> "
 
 prettyPrefix :: PrefixOp -> Builder
 prettyPrefix mprefix =
   case mprefix of
-    PrefixNot -> "!"
-    PrefixNegate -> "-"
+    PrefixNot        -> "!"
+    PrefixNegate     -> "-"
     PrefixComplement -> "~+"
