@@ -91,6 +91,7 @@ addGlobalHelp mode graph global state =
     -- For testing purposes we ignore the kernel code
         Opt.Kernel chunks deps -- T.trace (show (Opt.Kernel chunks deps)) state
          -> state
+        Opt.Enum index -> addStmt state (generateEnum mode global index)
         expr -> error ("unsupported argument: " ++ show expr)
 
 addStmt :: State -> Arduino.Stmt -> State
@@ -106,6 +107,12 @@ var (Opt.Global home name) code =
     "any"
     (ArduinoName.toBuilder (ArduinoName.fromGlobal home name))
     (Expr.codeToExpr code)
+    
+-- GENERATE ENUM
+generateEnum :: Mode.Mode -> Opt.Global -> Index.ZeroBased -> Arduino.Stmt
+generateEnum mode global@(Opt.Global home name) index =
+  Arduino.Enum (ArduinoName.fromGlobal home name) $
+ [ Arduino.Int (Index.toMachine index)]
 
 -- MAIN EXPORTS
 toMainExports :: Mode.Mode -> Mains -> B.Builder

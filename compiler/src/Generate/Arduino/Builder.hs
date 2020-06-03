@@ -32,6 +32,7 @@ data Expr
   | Infix InfixOp Expr Expr
   | Function (Maybe Name) [Name] [Stmt]
 
+
 -- STATEMENTS
 data Stmt
   = Block [Stmt]
@@ -43,6 +44,8 @@ data Stmt
   | IfStmt Expr Stmt Stmt
   | WhileStmt Expr Stmt
   | FunctionStmt Name [Name] [Stmt]
+  | Enum Name [Expr]
+
 
 -- Converts a datatype in form of a String to the equivelant C-datatype.
 -- Also returned as a String.
@@ -54,6 +57,7 @@ prettyDataType dataType =
     "Integer" -> "int"
     "Double" -> "double"
     "Void" -> "void"
+    "Enum" -> "enum"
     -- Dummy case used because type information is missing
     "any" -> "int"
 
@@ -92,6 +96,9 @@ pretty statement =
         , fromStmtBlock stmts
         , "}\n"
         ]
+    Enum name exprs ->
+      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : (map prettyExpr exprs)) : ["}"])
+
 
 fromStmtBlock :: [Stmt] -> Builder
 fromStmtBlock stmts = mconcat (map pretty stmts)
@@ -118,7 +125,7 @@ prettyExpr expression =
       mconcat [prettyPrefix prefixOperator, prettyExpr expr1]
     Call expr1 exprs ->
       mconcat [ prettyExpr expr1
-              , " ("
+              , "("
               , fromExprBlock exprs
               , ")"]
     Infix infixoperator expr1 expr2 ->
@@ -139,11 +146,12 @@ prettyExpr expression =
         , "}"
         ]
 
+
 commaSep :: [Builder] -> Builder
 commaSep builders = mconcat (List.intersperse ", " builders)
 
 fromExprBlock :: [Expr] -> Builder
-fromExprBlock exprs = mconcat (List.intersperse "," (map prettyExpr exprs))
+fromExprBlock exprs = mconcat (List.intersperse ", " (map prettyExpr exprs))
 
 
 data InfixOp
