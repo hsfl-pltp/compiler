@@ -59,7 +59,7 @@ prettyDataType dataType =
     "Void"    -> "void"
     "Enum"    -> "enum"
     -- Dummy case used because type information is missing
-    "any"     -> "int"
+    "any"     -> "void*"
 
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Stmt -> Builder
