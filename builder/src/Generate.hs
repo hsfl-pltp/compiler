@@ -95,7 +95,7 @@ devArduino root details (Build.Artifacts pkg ifaces roots modules) = do
   let mode = Mode.Dev Nothing
   let graph = objectsToGlobalGraph objects
   let mains = gatherMains pkg objects roots
-  T.trace (show types) (return (Arduino.generate mode graph mains))
+  T.trace (show objects) (return (Arduino.generate mode graph mains))
 
 -- CHECK FOR DEBUG
 checkForDebugUses :: Objects -> Task ()
@@ -160,6 +160,7 @@ data Objects =
     { _foreign :: Opt.GlobalGraph
     , _locals :: Map.Map ModuleName.Raw Opt.LocalGraph
     }
+  deriving (Show)
 
 finalizeObjects :: LoadingObjects -> Task Objects
 finalizeObjects (LoadingObjects mvar mvars) =

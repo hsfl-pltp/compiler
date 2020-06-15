@@ -116,6 +116,7 @@ data GlobalGraph =
     { _g_nodes :: Map.Map Global Node
     , _g_fields :: Map.Map Name Int
     }
+  deriving (Show)
 
 data LocalGraph =
   LocalGraph
@@ -123,6 +124,7 @@ data LocalGraph =
     , _l_nodes :: Map.Map Global Node -- PERF profile switching Global to Name
     , _l_fields :: Map.Map Name Int
     }
+  deriving (Show)
 
 data Main
   = Static
@@ -130,7 +132,8 @@ data Main
       { _message :: Can.Type
       , _decoder :: Expr
       }
-
+  deriving (Show)
+  
 data Node
   = Define Expr (Set.Set Global)
   | DefineTailFunc [Name] Expr (Set.Set Global)
