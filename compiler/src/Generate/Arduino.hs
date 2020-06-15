@@ -111,8 +111,8 @@ var (Opt.Global home name) code =
 -- GENERATE ENUM
 generateEnum :: Mode.Mode -> Opt.Global -> Index.ZeroBased -> Arduino.Stmt
 generateEnum mode global@(Opt.Global home name) index =
-  Arduino.Enum (ArduinoName.fromGlobal home name) $
- [ Arduino.Int (Index.toMachine index)]
+  Arduino.EnumStmt (ArduinoName.fromGlobal home name) $
+  Arduino.Int (Index.toMachine index)
 
 -- MAIN EXPORTS
 toMainExports :: Mode.Mode -> Mains -> B.Builder

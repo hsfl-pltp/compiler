@@ -31,6 +31,7 @@ data Expr
   | Call Expr [Expr]
   | Infix InfixOp Expr Expr
   | Function (Maybe Name) [Name] [Stmt]
+  | Enum Name Expr
 
 
 -- STATEMENTS
@@ -44,7 +45,7 @@ data Stmt
   | IfStmt Expr Stmt Stmt
   | WhileStmt Expr Stmt
   | FunctionStmt Name [Name] [Stmt]
-  | Enum Name [Expr]
+  | EnumStmt Name Expr
 
 
 -- Converts a datatype in form of a String to the equivelant C-datatype.
@@ -96,8 +97,8 @@ pretty statement =
         , fromStmtBlock stmts
         , "}\n"
         ]
-    Enum name exprs ->
-      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : (map prettyExpr exprs)) : ["}"])
+    EnumStmt name exprs ->
+      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([prettyExpr exprs])) : ["}"])
 
 
 fromStmtBlock :: [Stmt] -> Builder
@@ -123,6 +124,9 @@ prettyExpr expression =
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr expr1]
+    Enum name exprs ->
+      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([ prettyExpr exprs])) : ["}"])
+
     Call expr1 exprs ->
       mconcat [ prettyExpr expr1
               , "("
