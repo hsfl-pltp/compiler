@@ -136,7 +136,7 @@ loadObjects ::
      FilePath -> Details.Details -> [Build.Module] -> Task LoadingObjects
 loadObjects root details modules =
   Task.io $ do
-    mvar <- Details.loadObjects root details
+    mvar <- Details.loadObjects root details -- The Kernel Code from the .dat files should be saved here
     mvars <- traverse (loadObject root) modules
     return $ LoadingObjects mvar (Map.fromList mvars)
 

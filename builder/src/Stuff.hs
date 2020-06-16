@@ -34,7 +34,7 @@ import qualified Elm.Version as V
 
 -- PATHS
 
-
+--- Some of the Kernel Code is Encoded in the following .dat files. The .dat files can not be changed.
 stuff :: FilePath -> FilePath
 stuff root =
   root </> "elm-stuff" </> compilerVersion

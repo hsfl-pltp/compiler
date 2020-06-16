@@ -29,6 +29,11 @@ import qualified Reporting.Render.Type           as RT
 import qualified Reporting.Render.Type.Localizer as L
 import qualified Generate.Boilerplate            as BP
 
+import qualified Generate.JavaScript.Builder     as JS
+import qualified Generate.JavaScript.Expression  as JSExpr
+import qualified Generate.JavaScript.Functions   as JSFunctions
+import qualified Generate.JavaScript.Name        as JsName
+
 -- GENERATE
 type Graph = Map.Map Opt.Global Opt.Node
 
@@ -89,8 +94,10 @@ addGlobalHelp mode graph global state =
         Opt.Define expr deps ->
           addStmt (addDeps deps state) (var global (Expr.generate expr))
     -- For testing purposes we ignore the kernel code
-        Opt.Kernel chunks deps -- T.trace (show (Opt.Kernel chunks deps)) state
-         -> state
+        Opt.Kernel chunks deps -> -- T.trace (show (Opt.Kernel chunks deps)) state
+          if isDebugger global && not (Mode.isDebug mode)
+            then T.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) state --remove all except state
+            else T.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) addKernel (addDeps deps state) (generateKernel mode chunks)
         Opt.Enum index -> addStmt state (generateEnum mode global index)
         expr -> error ("unsupported argument: " ++ show expr)
 
@@ -101,12 +108,20 @@ addBuilder :: State -> B.Builder -> State
 addBuilder (State revKernels revBuilders seen) builder =
   State revKernels (builder : revBuilders) seen
 
+addKernel :: State -> B.Builder -> State
+addKernel (State revKernels revBuilders seen) kernel =
+  State (kernel : revKernels) revBuilders seen
+
+
 var :: Opt.Global -> Expr.Code -> Arduino.Stmt
 var (Opt.Global home name) code =
   Arduino.Var
     "any"
     (ArduinoName.toBuilder (ArduinoName.fromGlobal home name))
     (Expr.codeToExpr code)
+
+isDebugger :: Opt.Global -> Bool
+isDebugger (Opt.Global (ModuleName.Canonical _ home) _) = home == Name.debugger   
     
 -- GENERATE ENUM
 generateEnum :: Mode.Mode -> Opt.Global -> Index.ZeroBased -> Arduino.Stmt
@@ -114,6 +129,31 @@ generateEnum mode global@(Opt.Global home name) index =
   Arduino.Enum (ArduinoName.fromGlobal home name) $
  [ Arduino.Int (Index.toMachine index)]
 
+-- GENERATE KERNEL
+generateKernel :: Mode.Mode -> [K.Chunk] -> B.Builder
+generateKernel mode chunks = List.foldr (addChunk mode) mempty chunks
+
+addChunk :: Mode.Mode -> K.Chunk -> B.Builder -> B.Builder
+addChunk mode chunk builder =
+  case chunk of
+    K.JS javascript -> B.byteString javascript <> builder
+    K.ElmVar home name ->
+      JsName.toBuilder (JsName.fromGlobal home name) <> builder
+    K.JsVar home name ->
+      JsName.toBuilder (JsName.fromKernel home name) <> builder
+    K.ElmField name ->
+      JsName.toBuilder (JSExpr.generateField mode name) <> builder
+    K.JsField int -> JsName.toBuilder (JsName.fromInt int) <> builder
+    K.JsEnum int -> B.intDec int <> builder
+    K.Debug ->
+      case mode of
+        Mode.Dev _  -> builder
+        Mode.Prod _ -> "_UNUSED" <> builder
+    K.Prod ->
+      case mode of
+        Mode.Dev _  -> "_UNUSED" <> builder
+        Mode.Prod _ -> builder
+        
 -- MAIN EXPORTS
 toMainExports :: Mode.Mode -> Mains -> B.Builder
 toMainExports mode mains =
