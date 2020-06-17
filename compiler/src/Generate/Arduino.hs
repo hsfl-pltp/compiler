@@ -88,7 +88,7 @@ addGlobalHelp mode graph global state =
     -- For testing purposes we ignore the kernel code
         Opt.Kernel chunks deps -- T.trace (show (Opt.Kernel chunks deps)) state
          -> state
-        Opt.Enum index -> addStmt state (generateEnum mode global index)
+        Opt.Enum index -> addStmt state Arduino.PlaceholderStmt
         expr -> error ("unsupported argument: " ++ show expr)
 
 addStmt :: State -> Arduino.Stmt -> State

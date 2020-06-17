@@ -47,6 +47,7 @@ data Stmt
   | WhileStmt Expr Stmt
   | FunctionStmt Name [Name] [Stmt]
   | EnumStmt Name Expr
+  | PlaceholderStmt
 
 
 -- Converts a datatype in form of a String to the equivelant C-datatype.
@@ -72,6 +73,7 @@ pretty level@(Level indent nextLevel) statement =
   case statement of
     Block array -> mconcat (map (pretty nextLevel) array)
     EmptyStmt -> error "Not supported EmptyStmt"
+    PlaceholderStmt -> ""
     Var dataType name expr ->
       mconcat
         [indent, (prettyDataType dataType), " ", name, " = ", (prettyExpr expr), ";\n"]
@@ -102,7 +104,7 @@ pretty level@(Level indent nextLevel) statement =
         , "}\n"
         ]
     EnumStmt name exprs ->
-      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([prettyExpr exprs])) : [ "\n"])
+      ""
 
 
 fromStmtBlock :: [Stmt] -> Builder
