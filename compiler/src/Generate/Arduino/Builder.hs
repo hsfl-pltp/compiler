@@ -48,6 +48,7 @@ data Stmt
   | WhileStmt Expr Stmt
   | FunctionStmt Name [Name] [Stmt]
   | EnumStmt Name Expr
+  | PlaceholderStmt
 
 
 -- Converts a datatype in form of a String to the equivelant C-datatype.
@@ -73,6 +74,7 @@ pretty level@(Level indent nextLevel) statement =
   case statement of
     Block array -> mconcat (map (pretty nextLevel) array)
     EmptyStmt -> error "Not supported EmptyStmt"
+    PlaceholderStmt -> ""
     Var dataType name expr ->
       mconcat
         [indent, (prettyDataType dataType), " ", name, " = ",(prettyExpr nextLevel expr), ";\n"]
@@ -103,8 +105,7 @@ pretty level@(Level indent nextLevel) statement =
         , "}\n"
         ]
     EnumStmt name exprs ->
-      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([prettyExpr nextLevel exprs])) : ["}"])
-
+      ""
 
 fromStmtBlock :: Level -> [Stmt] -> Builder
 fromStmtBlock level stmts = mconcat (map (pretty level) stmts)
@@ -130,12 +131,12 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Double double -> double
     If infixExpr expr1 expr2 ->
       mconcat
-        [prettyExpr nextLevel expr1, " ", prettyExpr nextLevel infixExpr, " ", prettyExpr nextLevel expr2]
+        ["if (", prettyExpr nextLevel infixExpr,")", "{ \n", prettyExpr nextLevel expr1, "\n}",  " else { \n ", prettyExpr nextLevel expr2, "\n }"]
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
     Enum name exprs ->
-      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([ prettyExpr nextLevel exprs])) : ["}"])
+      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([ prettyExpr exprs])) : [ "\n"])
 
     Call expr1 exprs ->
       mconcat [ prettyExpr nextLevel expr1
