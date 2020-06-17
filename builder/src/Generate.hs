@@ -95,7 +95,7 @@ devArduino root details (Build.Artifacts pkg ifaces roots modules) = do
   let mode = Mode.Dev Nothing
   let graph = objectsToGlobalGraph objects
   let mains = gatherMains pkg objects roots
-  T.trace (show objects) (return (Arduino.generate mode graph mains))
+  T.trace (show objects) (return (Arduino.generate mode graph mains)) --the output can be viewed here https://github.com/Alcatracz/Masterprojekt/blob/master/Misc/generate-object-content.js
 
 -- CHECK FOR DEBUG
 checkForDebugUses :: Objects -> Task ()
@@ -171,6 +171,8 @@ finalizeObjects (LoadingObjects mvar mvars) =
       Just loaded -> return (Right loaded)
       Nothing -> return (Left Exit.GenerateCannotLoadArtifacts)
 
+--the objects will be loaded in any case (loadObjects function) but the 
+--kernel code shouldnt be added to the graph 
 objectsToGlobalGraph :: Objects -> Opt.GlobalGraph
 objectsToGlobalGraph (Objects globals locals) =
   foldr Opt.addLocalGraph globals locals

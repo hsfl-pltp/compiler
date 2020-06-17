@@ -128,7 +128,7 @@ loadObjects :: FilePath -> Details -> IO (MVar (Maybe Opt.GlobalGraph))
 loadObjects root (Details _ _ _ _ _ extras) =
   case extras of
     ArtifactsFresh _ o -> newMVar (Just o)
-    ArtifactsCached    -> fork (File.readBinary (Stuff.objects root))
+    ArtifactsCached    -> fork (File.readBinary (Stuff.objects root)) --the cached .dat files are read here
 
 
 loadInterfaces :: FilePath -> Details -> IO (MVar (Maybe Interfaces))

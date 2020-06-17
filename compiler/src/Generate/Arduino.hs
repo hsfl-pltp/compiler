@@ -98,6 +98,7 @@ addGlobalHelp mode graph global state =
           if isDebugger global && not (Mode.isDebug mode)
             then T.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) state --remove all except state
             else T.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) addKernel (addDeps deps state) (generateKernel mode chunks)
+        --
         Opt.Enum index -> addStmt state (generateEnum mode global index)
         expr -> error ("unsupported argument: " ++ show expr)
 
