@@ -3,13 +3,14 @@
 
 module Generate.Arduino.Builder
   ( Expr(..)
-  , pretty
+  , stmtToBuilder
   , prettyExpr
   , Stmt(..)
   , PrefixOp(..)
   , InfixOp(..)
   ) where
 
+import qualified Data.ByteString as BS
 import           Data.ByteString.Builder as B
 import qualified Data.List               as List
 import           Generate.Arduino.Name   (Name)
@@ -62,15 +63,18 @@ prettyDataType dataType =
     -- Dummy case used because type information is missing
     "any"     -> "void*"
 
+stmtToBuilder :: Stmt -> Builder
+stmtToBuilder stmts = pretty (levelAny 1) stmts
+
 --This function takes a Stmt and converts it into a C-program as a string.
-pretty :: Stmt -> Builder
-pretty statement =
+pretty :: Level -> Stmt -> Builder
+pretty level@(Level indent nextLevel) statement =
   case statement of
-    Block array -> mconcat (map pretty array)
+    Block array -> mconcat (map (pretty nextLevel) array)
     EmptyStmt -> error "Not supported EmptyStmt"
     Var dataType name expr ->
       mconcat
-        [(prettyDataType dataType), " ", name, " = ", (prettyExpr expr), ";\n"]
+        [indent, (prettyDataType dataType), " ", name, " = ", (prettyExpr expr), ";\n"]
     Decl dataType name -> mconcat [(prettyDataType dataType), " ", name]
     Const constExpr -> mconcat ["const", (prettyExpr constExpr), ";\n"]
     Return expr -> mconcat ["return ", (prettyExpr expr)]
@@ -79,14 +83,14 @@ pretty statement =
         [ "if("
         , prettyExpr condition
         , ") {\n"
-        , pretty thenStmt
+        , pretty nextLevel thenStmt
         , "} else {\n"
-        , pretty elseStmt
+        , pretty nextLevel elseStmt
         , "}\n"
         ]
     WhileStmt condition loopStmt ->
       mconcat
-        ["while(", (prettyExpr condition), ") {\n", (pretty loopStmt), "}"]
+        ["while(", (prettyExpr condition), ") {\n", (pretty nextLevel loopStmt), "}"]
     FunctionStmt name args stmts ->
       mconcat
         [ "void "
@@ -102,7 +106,7 @@ pretty statement =
 
 
 fromStmtBlock :: [Stmt] -> Builder
-fromStmtBlock stmts = mconcat (map pretty stmts)
+fromStmtBlock stmts = mconcat (map (pretty levelZero) stmts)
 
 --Converts an argument of the type Expr into a String.
 prettyExpr :: Expr -> Builder
@@ -213,3 +217,20 @@ prettyPrefix mprefix =
     PrefixNot        -> "!"
     PrefixNegate     -> "-"
     PrefixComplement -> "~+"
+
+data Level =
+  Level Builder Level
+
+levelZero :: Level
+levelZero = Level mempty (makeLevel 1 (BS.replicate 16 0x09)) {-\t-}
+
+levelAny :: Int -> Level
+levelAny n = Level (B.byteString (BS.replicate n 0x09)) (makeLevel (n + 1) (BS.replicate 16 0x09)) {-\t-}
+
+makeLevel :: Int -> BS.ByteString -> Level
+makeLevel level oldTabs =
+  let tabs =
+        if level <= BS.length oldTabs
+          then oldTabs
+          else BS.replicate (BS.length oldTabs * 2) 0x09 {-\t-}
+   in Level (B.byteString (BS.take level tabs)) (makeLevel (level + 1) tabs)

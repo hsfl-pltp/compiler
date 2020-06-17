@@ -37,11 +37,8 @@ type Mains = Map.Map ModuleName.Canonical Opt.Main
 generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
 generate mode (Opt.GlobalGraph graph _) mains =
   let state = Map.foldrWithKey (addMain mode graph) emptyState mains
-   in -- "(function(scope){\n'use strict';"
-      -- <> Functions.functions
-       -- <>
-      perfNote mode <> "\n" <>
-      BP.sandwichArduino (stateToBuilder state) -- <> toMainExports mode mains -- <> "}(this));"
+   in perfNote mode <> "\n" <> BP.sandwichArduino (stateToBuilder state)
+
 
 addMain ::
      Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
@@ -95,7 +92,7 @@ addGlobalHelp mode graph global state =
         expr -> error ("unsupported argument: " ++ show expr)
 
 addStmt :: State -> Arduino.Stmt -> State
-addStmt state stmt = addBuilder state (Arduino.pretty stmt)
+addStmt state stmt = addBuilder state (Arduino.stmtToBuilder stmt)
 
 addBuilder :: State -> B.Builder -> State
 addBuilder (State revKernels revBuilders seen) builder =
