@@ -98,7 +98,7 @@ pretty statement =
         , "}\n"
         ]
     EnumStmt name exprs ->
-      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([prettyExpr exprs])) : ["}"])
+      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([prettyExpr exprs])) : [ "\n"])
 
 
 fromStmtBlock :: [Stmt] -> Builder
@@ -120,12 +120,12 @@ prettyExpr expression =
     Double double -> double
     If infixExpr expr1 expr2 ->
       mconcat
-        [prettyExpr expr1, " ", prettyExpr infixExpr, " ", prettyExpr expr2]
+        ["if (", prettyExpr infixExpr,")", "{ \n", prettyExpr expr1, "\n}",  " else { \n ", prettyExpr expr2, "\n }"]
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr expr1]
     Enum name exprs ->
-      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([ prettyExpr exprs])) : ["}"])
+      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : ([ prettyExpr exprs])) : [ "\n"])
 
     Call expr1 exprs ->
       mconcat [ prettyExpr expr1
