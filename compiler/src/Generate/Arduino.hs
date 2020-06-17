@@ -43,7 +43,8 @@ generate mode (Opt.GlobalGraph graph _) mains =
 addMain ::
      Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
 addMain mode graph home _ state =
-  addGlobal mode graph state (Opt.Global home "main")
+    addGlobal mode graph state (Opt.Global home "main")
+ -- addGlobal mode (T.trace ("Trace dat graph" ++ show graph) graph) state (Opt.Global home "main")
 
 perfNote :: Mode.Mode -> B.Builder
 perfNote mode =
@@ -74,7 +75,7 @@ prependBuilders revBuilders monolith =
 -- ADD DEPENDENCIES
 addGlobal :: Mode.Mode -> Graph -> State -> Opt.Global -> State
 addGlobal mode graph state@(State revKernels builders seen) global =
-  if Set.member global seen
+  if Set.member (T.trace ("Trace global" ++ show global) global) seen
     then state
     else addGlobalHelp mode graph global $
          State revKernels builders (Set.insert global seen)
@@ -126,7 +127,7 @@ generateExports mode (Trie maybeMain subs) =
           Nothing -> "{"
           Just (home, main) ->
             "{'init':" <>
-            Arduino.prettyExpr (Expr.generateMain mode home main) <> end
+            Arduino.exprToBuilder (Expr.generateMain mode home main) <> end
    in case Map.toList subs of
         [] -> starter "" <> "}"
         (name, subTrie):otherSubTries ->
