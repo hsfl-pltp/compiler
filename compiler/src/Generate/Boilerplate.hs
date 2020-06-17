@@ -15,11 +15,13 @@ import Text.RawString.QQ (r)
 -- SANDWICH
 
 
-sandwichArduino :: B.Builder -> B.Builder
-sandwichArduino ccode =
+sandwichArduino :: B.Builder -> B.Builder -> B.Builder
+sandwichArduino ccode mode =
   [r|
 
 void setup() {
+Serial.begin(9600);
+|] <> mode <> [r|
 |] <> ccode <> [r|
 //The Code here will only be executed once 
 }

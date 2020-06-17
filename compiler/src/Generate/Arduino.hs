@@ -37,7 +37,9 @@ type Mains = Map.Map ModuleName.Canonical Opt.Main
 generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
 generate mode (Opt.GlobalGraph graph _) mains =
   let state = Map.foldrWithKey (addMain mode graph) emptyState mains
-   in perfNote mode <> "\n" <> BP.sandwichArduino (stateToBuilder state)
+   in 
+     --perfNote mode <> "\n" <> 
+     BP.sandwichArduino (stateToBuilder state) (perfNote mode)
 
 
 addMain ::
@@ -49,8 +51,8 @@ perfNote :: Mode.Mode -> B.Builder
 perfNote mode =
   case mode of
     Mode.Prod _       -> ""
-    Mode.Dev Nothing  -> "//Compiled in DEV mode."
-    Mode.Dev (Just _) -> "//Compiled in DEBUG mode."
+    Mode.Dev Nothing  -> "Serial.print('Compiled in DEV mode.');"
+    Mode.Dev (Just _) -> "Serial.print('Compiled in DEBUG mode.');"
 
 -- GRAPH TRAVERSAL STATE
 emptyState :: State
