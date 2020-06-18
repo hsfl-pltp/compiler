@@ -37,23 +37,23 @@ type Mains = Map.Map ModuleName.Canonical Opt.Main
 generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
 generate mode (Opt.GlobalGraph graph _) mains =
   let state = Map.foldrWithKey (addMain mode graph) emptyState mains
-   in -- "(function(scope){\n'use strict';"
-      -- <> Functions.functions
-       -- <>
-      perfNote mode <> "\n" <>
-      BP.sandwichArduino (stateToBuilder state) -- <> toMainExports mode mains -- <> "}(this));"
+   in 
+     --perfNote mode <> "\n" <> 
+     BP.sandwichArduino (stateToBuilder state) (perfNote mode)
+
 
 addMain ::
      Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
 addMain mode graph home _ state =
-  addGlobal mode graph state (Opt.Global home "main")
+    addGlobal mode graph state (Opt.Global home "main")
+ -- addGlobal mode (T.trace ("Trace dat graph" ++ show graph) graph) state (Opt.Global home "main")
 
 perfNote :: Mode.Mode -> B.Builder
 perfNote mode =
   case mode of
     Mode.Prod _       -> ""
-    Mode.Dev Nothing  -> "//Compiled in DEV mode."
-    Mode.Dev (Just _) -> "//Compiled in DEBUG mode."
+    Mode.Dev Nothing  -> "Serial.print('Compiled in DEV mode.');"
+    Mode.Dev (Just _) -> "Serial.print('Compiled in DEBUG mode.');"
 
 -- GRAPH TRAVERSAL STATE
 emptyState :: State
@@ -77,7 +77,7 @@ prependBuilders revBuilders monolith =
 -- ADD DEPENDENCIES
 addGlobal :: Mode.Mode -> Graph -> State -> Opt.Global -> State
 addGlobal mode graph state@(State revKernels builders seen) global =
-  if Set.member global seen
+  if Set.member (T.trace ("Trace global" ++ show global) global) seen
     then state
     else addGlobalHelp mode graph global $
          State revKernels builders (Set.insert global seen)
@@ -91,11 +91,11 @@ addGlobalHelp mode graph global state =
     -- For testing purposes we ignore the kernel code
         Opt.Kernel chunks deps -- T.trace (show (Opt.Kernel chunks deps)) state
          -> state
-        Opt.Enum index -> addStmt state (generateEnum mode global index)
+        Opt.Enum index -> addStmt state Arduino.PlaceholderStmt
         expr -> error ("unsupported argument: " ++ show expr)
 
 addStmt :: State -> Arduino.Stmt -> State
-addStmt state stmt = addBuilder state (Arduino.pretty stmt)
+addStmt state stmt = addBuilder state (Arduino.stmtToBuilder stmt)
 
 addBuilder :: State -> B.Builder -> State
 addBuilder (State revKernels revBuilders seen) builder =
@@ -129,7 +129,7 @@ generateExports mode (Trie maybeMain subs) =
           Nothing -> "{"
           Just (home, main) ->
             "{'init':" <>
-            Arduino.prettyExpr (Expr.generateMain mode home main) <> end
+            Arduino.exprToBuilder (Expr.generateMain mode home main) <> end
    in case Map.toList subs of
         [] -> starter "" <> "}"
         (name, subTrie):otherSubTries ->

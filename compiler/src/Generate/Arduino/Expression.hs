@@ -44,6 +44,12 @@ generate expr =
     Opt.VarEnum (Opt.Global home name) index ->
         CExpr (Arduino.Enum (ArduinoName.fromLocal name) ( Arduino.Int (Index.toMachine index)))
     Opt.VarDebug name home region unhandledValueName -> CExpr (generateDebug name home region unhandledValueName)
+    Opt.Function args body ->
+      generateFunction (map ArduinoName.fromLocal args) (generate body)
+    Opt.VarLocal name ->
+      CExpr $ Arduino.Ref (ArduinoName.fromLocal name)
+    Opt.VarGlobal (Opt.Global home name) ->
+      CExpr $ Arduino.Ref (ArduinoName.fromGlobal home name) 
     _ -> error (show expr)
 
 data Code
@@ -323,3 +329,22 @@ positionToArduinoExpr (A.Position line column) =
     --     [ "versions" ==> Encode.object [ "elm" ==> V.encode V.compiler ]
     --     , "types"    ==> Type.encodeMetadata (Extract.fromMsg interfaces msgType)
     --     ]
+
+
+generateFunction :: [ArduinoName.Name] -> Code -> Code
+generateFunction args body =
+  CExpr $ Arduino.Function Nothing args $
+    codeToStmtList body
+
+
+codeToStmtList :: Code -> [Arduino.Stmt]
+codeToStmtList code =
+  case code of
+    CExpr (Arduino.Call (Arduino.Function Nothing [] stmts) []) ->
+        stmts
+
+    CExpr expr ->
+        [ Arduino.Return expr ]
+
+    CBlock stmts ->
+        stmts
