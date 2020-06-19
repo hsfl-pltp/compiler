@@ -76,8 +76,12 @@ pretty level@(Level indent nextLevel) statement =
     EmptyStmt -> error "Not supported EmptyStmt"
     PlaceholderStmt -> ""
     Var dataType name expr ->
-      mconcat
-        [indent, (prettyDataType dataType), " ", name, " = ",(prettyExpr nextLevel expr), ";\n"]
+      case expr of
+        Function _ _ _ ->
+          mconcat [indent, (prettyDataType dataType), " ", name ,(prettyExpr nextLevel expr)]
+        _ ->
+          mconcat
+            [indent, (prettyDataType dataType), " ", name, " = ",(prettyExpr nextLevel expr), ";\n"]
     Decl dataType name -> mconcat [(prettyDataType dataType), " ", name]
     Const constExpr -> mconcat ["const", (prettyExpr nextLevel constExpr), ";\n"]
     Return expr -> mconcat [indent, "return ", (prettyExpr nextLevel expr), ";\n"]
