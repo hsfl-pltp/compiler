@@ -14,7 +14,6 @@ import qualified Data.ByteString as BS
 import Data.ByteString.Builder as B
 import qualified Data.Int as I
 import qualified Data.List as List
-import qualified Data.Utf8 as Utf8
 import Generate.Arduino.Name (Name)
 import qualified Generate.Arduino.Name as Name
 
@@ -79,29 +78,27 @@ pretty level@(Level indent nextLevel) statement =
         Function _ _ _ ->
           mconcat
             [ indent
-            , (prettyDataType dataType)
+            , prettyDataType dataType
             , " "
             , name
-            , (prettyExpr nextLevel expr)
+            , prettyExpr nextLevel expr
             ]
         _ ->
           mconcat
             [ indent
-            , (prettyDataType dataType)
+            , prettyDataType dataType
             , " "
             , name
             , " = "
-            , (prettyExpr nextLevel expr)
+            , prettyExpr nextLevel expr
             , ";\n"
             ]
-    Decl dataType name -> mconcat [(prettyDataType dataType), " ", name]
-    Const constExpr ->
-      mconcat ["const", (prettyExpr nextLevel constExpr), ";\n"]
-    Return expr ->
-      mconcat [indent, "return ", (prettyExpr nextLevel expr), ";\n"]
+    Decl dataType name -> mconcat [prettyDataType dataType, " ", name]
+    Const constExpr -> mconcat ["const ", prettyExpr nextLevel constExpr, ";\n"]
+    Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
     IfStmt condition thenStmt elseStmt ->
       mconcat
-        [ "if("
+        [ "if ("
         , prettyExpr nextLevel condition
         , ") {\n"
         , pretty nextLevel thenStmt
@@ -111,10 +108,10 @@ pretty level@(Level indent nextLevel) statement =
         ]
     WhileStmt condition loopStmt ->
       mconcat
-        [ "while("
-        , (prettyExpr nextLevel condition)
+        [ "while ("
+        , prettyExpr nextLevel condition
         , ") {\n"
-        , (pretty nextLevel loopStmt)
+        , pretty nextLevel loopStmt
         , "}"
         ]
     FunctionStmt name args stmts ->
@@ -127,7 +124,7 @@ pretty level@(Level indent nextLevel) statement =
         , fromStmtBlock nextLevel stmts
         , "}\n"
         ]
-    EnumStmt name exprs -> ""
+    EnumStmt name exprs -> error "Not supported EnumStmt"
 
 fromStmtBlock :: Level -> [Stmt] -> Builder
 fromStmtBlock level stmts = mconcat (map (pretty level) stmts)
@@ -143,9 +140,9 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Null -> "null"
     Ref name -> Name.toBuilder name
     Bool bool ->
-      case bool of
-        True -> "true"
-        False -> "false"
+      if bool
+        then "true"
+        else "false"
     Integer integer -> integer
     Int n -> B.intDec n
     Double double -> double
@@ -153,11 +150,9 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
       mconcat
         [ "if ("
         , prettyExpr nextLevel infixExpr
-        , ")"
-        , "{ \n"
+        , ") { \n"
         , prettyExpr nextLevel expr1
-        , "\n}"
-        , " else { \n "
+        , "\n} else { \n "
         , prettyExpr nextLevel expr2
         , "\n }"
         ]
@@ -165,11 +160,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
     Enum name exprs ->
-      mconcat
-        (mconcat
-           ((mconcat ["enum ", Name.toBuilder name]) :
-            ([prettyExpr nextLevel exprs])) :
-         ["\n"])
+      mconcat ["enum ", Name.toBuilder name, prettyExpr nextLevel exprs, "\n"]
     Call expr1 exprs ->
       mconcat
         [prettyExpr nextLevel expr1, "(", fromExprBlock nextLevel exprs, ")"]
