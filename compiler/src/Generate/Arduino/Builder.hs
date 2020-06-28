@@ -3,17 +3,19 @@
 
 module Generate.Arduino.Builder
   ( Expr(..)
-  , pretty
-  , prettyExpr
+  , stmtToBuilder
+  , exprToBuilder
   , Stmt(..)
   , PrefixOp(..)
   , InfixOp(..)
   ) where
 
-import           Data.ByteString.Builder as B
-import qualified Data.List               as List
-import           Generate.Arduino.Name   (Name)
-import qualified Generate.Arduino.Name   as Name
+import qualified Data.ByteString as BS
+import Data.ByteString.Builder as B
+import qualified Data.Int as I
+import qualified Data.List as List
+import Generate.Arduino.Name (Name)
+import qualified Generate.Arduino.Name as Name
 
 -- Expressions
 data Expr
@@ -31,7 +33,7 @@ data Expr
   | Call Expr [Expr]
   | Infix InfixOp Expr Expr
   | Function (Maybe Name) [Name] [Stmt]
-
+  | Enum Name Expr
 
 -- STATEMENTS
 data Stmt
@@ -44,115 +46,161 @@ data Stmt
   | IfStmt Expr Stmt Stmt
   | WhileStmt Expr Stmt
   | FunctionStmt Name [Name] [Stmt]
-  | Enum Name [Expr]
-
+  | EnumStmt Name Expr
+  | PlaceholderStmt
 
 -- Converts a datatype in form of a String to the equivelant C-datatype.
 -- Also returned as a String.
 prettyDataType :: String -> Builder
 prettyDataType dataType =
   case dataType of
-    "String"  -> "string"
-    "Bool"    -> "bool"
+    "String" -> "string"
+    "Bool" -> "bool"
     "Integer" -> "int"
-    "Double"  -> "double"
-    "Void"    -> "void"
-    "Enum"    -> "enum"
+    "Double" -> "double"
+    "Void" -> "void"
+    "Enum" -> "enum"
     -- Dummy case used because type information is missing
-    "any"     -> "void*"
+    "any" -> "void*"
+
+stmtToBuilder :: Stmt -> Builder
+stmtToBuilder stmts = pretty (levelAny 1) stmts
 
 --This function takes a Stmt and converts it into a C-program as a string.
-pretty :: Stmt -> Builder
-pretty statement =
+pretty :: Level -> Stmt -> Builder
+pretty level@(Level indent nextLevel) statement =
   case statement of
-    Block array -> mconcat (map pretty array)
+    Block array -> mconcat (map (pretty nextLevel) array)
     EmptyStmt -> error "Not supported EmptyStmt"
+    PlaceholderStmt -> ""
     Var dataType name expr ->
-      mconcat
-        [(prettyDataType dataType), " ", name, " = ", (prettyExpr expr), ";\n"]
-    Decl dataType name -> mconcat [(prettyDataType dataType), " ", name]
-    Const constExpr -> mconcat ["const", (prettyExpr constExpr), ";\n"]
-    Return expr -> mconcat ["return ", (prettyExpr expr)]
+      case expr of
+        Function _ _ _ ->
+          mconcat
+            [ indent
+            , prettyDataType dataType
+            , " "
+            , name
+            , prettyExpr nextLevel expr
+            ]
+        _ ->
+          mconcat
+            [ indent
+            , prettyDataType dataType
+            , " "
+            , name
+            , " = "
+            , prettyExpr nextLevel expr
+            , ";\n"
+            ]
+    Decl dataType name -> mconcat [prettyDataType dataType, " ", name]
+    Const constExpr -> mconcat ["const ", prettyExpr nextLevel constExpr, ";\n"]
+    Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
     IfStmt condition thenStmt elseStmt ->
       mconcat
-        [ "if("
-        , prettyExpr condition
+        [ "if ("
+        , prettyExpr nextLevel condition
         , ") {\n"
-        , pretty thenStmt
+        , pretty nextLevel thenStmt
         , "} else {\n"
-        , pretty elseStmt
+        , pretty nextLevel elseStmt
         , "}\n"
         ]
     WhileStmt condition loopStmt ->
       mconcat
-        ["while(", (prettyExpr condition), ") {\n", (pretty loopStmt), "}"]
+        [ "while ("
+        , prettyExpr nextLevel condition
+        , ") {\n"
+        , pretty nextLevel loopStmt
+        , "}"
+        ]
     FunctionStmt name args stmts ->
       mconcat
-        [ "void "
-        , Name.toBuilder name
-        , "("
-        , commaSep (map Name.toBuilder args)
-        , ") {\n"
-        , fromStmtBlock stmts
+        [ Name.toBuilder name
+        , "( void* args ) {\n"
+        , indent
+        , "void* tmp0;"
+        , argsToBuilder args indent
+        , fromStmtBlock nextLevel stmts
         , "}\n"
         ]
-    Enum name exprs ->
-      mconcat (mconcat ((mconcat ["enum ", Name.toBuilder name]) : (map prettyExpr exprs)) : ["}"])
+    EnumStmt name exprs -> error "Not supported EnumStmt"
 
+fromStmtBlock :: Level -> [Stmt] -> Builder
+fromStmtBlock level stmts = mconcat (map (pretty level) stmts)
 
-fromStmtBlock :: [Stmt] -> Builder
-fromStmtBlock stmts = mconcat (map pretty stmts)
+exprToBuilder :: Expr -> Builder
+exprToBuilder expr = prettyExpr levelZero expr
 
 --Converts an argument of the type Expr into a String.
-prettyExpr :: Expr -> Builder
-prettyExpr expression =
+prettyExpr :: Level -> Expr -> Builder
+prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
   case expression of
-    String string -> mconcat [ "\"", string, "\""]
+    String string -> mconcat ["\"", string, "\""]
     Null -> "null"
     Ref name -> Name.toBuilder name
     Bool bool ->
-      case bool of
-        True  -> "true"
-        False -> "false"
+      if bool
+        then "true"
+        else "false"
     Integer integer -> integer
     Int n -> B.intDec n
     Double double -> double
     If infixExpr expr1 expr2 ->
       mconcat
-        [prettyExpr expr1, " ", prettyExpr infixExpr, " ", prettyExpr expr2]
+        [ "if ("
+        , prettyExpr nextLevel infixExpr
+        , ") { \n"
+        , prettyExpr nextLevel expr1
+        , "\n} else { \n "
+        , prettyExpr nextLevel expr2
+        , "\n }"
+        ]
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
-      mconcat [prettyPrefix prefixOperator, prettyExpr expr1]
+      mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
+    Enum name exprs ->
+      mconcat ["enum ", Name.toBuilder name, prettyExpr nextLevel exprs, "\n"]
     Call expr1 exprs ->
-      mconcat [ prettyExpr expr1
-              , "("
-              , fromExprBlock exprs
-              , ")"]
+      mconcat
+        [prettyExpr nextLevel expr1, "(", fromExprBlock nextLevel exprs, ")"]
     Infix infixoperator expr1 expr2 ->
       mconcat
-        [ prettyExpr expr1
+        [ prettyExpr nextLevel expr1
         , " "
         , prettyInfix infixoperator
         , " "
-        , prettyExpr expr2
+        , prettyExpr nextLevel expr2
         ]
     Function maybeName args stmts ->
       mconcat
-        [ "void "
-        , maybe mempty Name.toBuilder maybeName
-        , "(" <> commaSep (map Name.toBuilder args)
-        , ") {\n"
-        , fromStmtBlock stmts
-        , "}"
+        [ maybe mempty Name.toBuilder maybeName
+        , "( void* args[] ) {\n"
+        , indent
+        , "void* tmp0; \n"
+        , argsToBuilder args indent
+        , fromStmtBlock nextLevel stmts
+        , "}\n"
         ]
 
+indexedMap :: (a -> I.Int8 -> b) -> [a] -> [b]
+indexedMap f l = zipWith f l [0 ..]
+
+argsToBuilder :: [Name.Name] -> Builder -> Builder
+argsToBuilder args indent =
+  mconcat
+    (indexedMap
+       (\x i ->
+          indent <>
+          "void* " <> Name.toBuilder x <> " = args[" <> (B.int8Dec i) <> "]; \n")
+       args)
 
 commaSep :: [Builder] -> Builder
 commaSep builders = mconcat (List.intersperse ", " builders)
 
-fromExprBlock :: [Expr] -> Builder
-fromExprBlock exprs = mconcat (List.intersperse ", " (map prettyExpr exprs))
-
+fromExprBlock :: Level -> [Expr] -> Builder
+fromExprBlock level exprs =
+  mconcat (List.intersperse ", " (map (prettyExpr level) exprs))
 
 data InfixOp
   = OpAdd -- +
@@ -183,29 +231,49 @@ data PrefixOp
 prettyInfix :: InfixOp -> Builder
 prettyInfix minfix =
   case minfix of
-    OpAdd        -> " + "
-    OpSub        -> " - "
-    OpMul        -> " * " -- *
-    OpDiv        -> " / " -- /
-    OpMod        -> " % "
-    OpEq         -> " == "
-    OpNe         -> " != "
-    OpLt         -> " < "
-    OpLe         -> " <= "
-    OpGt         -> " > "
-    OpGe         -> " >= "
-    OpAnd        -> " && "
-    OpOr         -> " || "
+    OpAdd -> " + "
+    OpSub -> " - "
+    OpMul -> " * " -- *
+    OpDiv -> " / " -- /
+    OpMod -> " % "
+    OpEq -> " == "
+    OpNe -> " != "
+    OpLt -> " < "
+    OpLe -> " <= "
+    OpGt -> " > "
+    OpGe -> " >= "
+    OpAnd -> " && "
+    OpOr -> " || "
     OpBitwiseAnd -> " & "
     OpBitwiseXor -> " ^ "
-    OpBitwiseOr  -> " | "
-    OpLShift     -> " << "
-    OpSpRShift   -> " >> "
-    OpZfRShift   -> " >>> "
+    OpBitwiseOr -> " | "
+    OpLShift -> " << "
+    OpSpRShift -> " >> "
+    OpZfRShift -> " >>> "
 
 prettyPrefix :: PrefixOp -> Builder
 prettyPrefix mprefix =
   case mprefix of
-    PrefixNot        -> "!"
-    PrefixNegate     -> "-"
+    PrefixNot -> "!"
+    PrefixNegate -> "-"
     PrefixComplement -> "~+"
+
+data Level =
+  Level Builder Level
+
+levelZero :: Level
+levelZero = Level mempty (makeLevel 1 (BS.replicate 16 0x09)) {-\t-}
+
+levelAny :: Int -> Level
+levelAny n =
+  Level
+    (B.byteString (BS.replicate n 0x09))
+    (makeLevel (n + 1) (BS.replicate 16 0x09)) {-\t-}
+
+makeLevel :: Int -> BS.ByteString -> Level
+makeLevel level oldTabs =
+  let tabs =
+        if level <= BS.length oldTabs
+          then oldTabs
+          else BS.replicate (BS.length oldTabs * 2) 0x09 {-\t-}
+   in Level (B.byteString (BS.take level tabs)) (makeLevel (level + 1) tabs)

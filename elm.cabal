@@ -155,6 +155,7 @@ Executable elm
         Generate.Arduino.Builder
         Generate.Arduino.Expression
         Generate.Arduino.Name
+        Generate.Arduino.Functions
         Generate.Mode
         Nitpick.Debug
         Nitpick.PatternMatches
