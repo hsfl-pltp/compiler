@@ -34,6 +34,8 @@ import qualified Generate.JavaScript.Expression  as JSExpr
 import qualified Generate.JavaScript.Functions   as JSFunctions
 import qualified Generate.JavaScript.Name        as JsName
 
+import qualified Data.ByteString.Char8 as By
+
 -- GENERATE
 type Graph = Map.Map Opt.Global Opt.Node
 
@@ -90,12 +92,15 @@ addGlobal mode graph state@(State revKernels builders seen) global =
 addGlobalHelp :: Mode.Mode -> Graph -> Opt.Global -> State -> State
 addGlobalHelp mode graph global state =
   let addDeps deps someState = Set.foldl' (addGlobal mode graph) someState deps
+    -- test = Opt.Kernel [K.JS (By.pack "Test")] (foldr K.addKernelDep Set.empty [K.JS (By.pack "Test")])
    in case graph ! global of
         Opt.Define expr deps ->
           addStmt (addDeps deps state) (var global (Expr.generate expr))
     -- For testing purposes we ignore the kernel code
+        Opt.Link linkedGlobal -> state --ignore (has to be added)
+        Opt.Ctor index arity -> state --ignore (has to be added)
         Opt.Kernel chunks deps -- T.trace (show (Opt.Kernel chunks deps)) state
-         -> state
+         -> T.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) addKernel (addDeps deps state) (generateKernel mode [K.JS (By.pack "Test")])
         Opt.Enum index -> addStmt state (generateEnum mode global index)
         expr -> error ("unsupported argument: " ++ show expr)
 
@@ -139,21 +144,15 @@ addChunk mode chunk builder =
   case chunk of
     K.JS javascript -> B.byteString javascript <> builder
     K.ElmVar home name ->
-      JsName.toBuilder (JsName.fromGlobal home name) <> builder
+      builder
     K.JsVar home name ->
-      JsName.toBuilder (JsName.fromKernel home name) <> builder
+      builder
     K.ElmField name ->
-      JsName.toBuilder (JSExpr.generateField mode name) <> builder
-    K.JsField int -> JsName.toBuilder (JsName.fromInt int) <> builder
-    K.JsEnum int -> B.intDec int <> builder
-    K.Debug ->
-      case mode of
-        Mode.Dev _  -> builder
-        Mode.Prod _ -> "_UNUSED" <> builder
-    K.Prod ->
-      case mode of
-        Mode.Dev _  -> "_UNUSED" <> builder
-        Mode.Prod _ -> builder
+     builder
+    K.JsField int -> builder
+    K.JsEnum int -> builder
+    K.Debug -> builder
+    K.Prod -> builder
         
 -- MAIN EXPORTS
 toMainExports :: Mode.Mode -> Mains -> B.Builder

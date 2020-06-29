@@ -32,6 +32,8 @@ import qualified Reporting.Doc                   as D
 import qualified Reporting.Render.Type           as RT
 import qualified Reporting.Render.Type.Localizer as L
 
+import qualified Data.ByteString.Char8 as By
+
 -- GENERATE
 type Graph = Map.Map Opt.Global Opt.Node
 
@@ -212,9 +214,9 @@ addGlobalHelp mode graph global state =
           generateManager mode graph global effectsType state
         Opt.Kernel chunks deps ->
           if isDebugger global && not (Mode.isDebug mode)
-            then D.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) state --remove all except state
-            else D.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) addKernel (addDeps deps state) (generateKernel mode chunks)
-            --this adds the Kernel Code which is already present
+            then  state --remove all except state
+            else  addKernel (addDeps deps state) (generateKernel mode [K.JS (By.pack "Test")])
+            --
         Opt.Enum index -> addStmt state (generateEnum mode global index)
         Opt.Box ->
           addStmt
