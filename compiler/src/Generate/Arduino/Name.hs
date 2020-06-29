@@ -7,6 +7,8 @@ module Generate.Arduino.Name
   , fromLocal
   , fromKernel
   , makeA
+  , fromIndex
+  , dollar
   ) where
 
 import qualified Data.ByteString.Builder as B
@@ -15,9 +17,10 @@ import qualified Data.Name as Name
 import qualified Data.Set as Set
 import qualified Data.Utf8 as Utf8
 import Data.Word (Word8)
-
+import qualified Data.Index as Index
 import qualified Elm.ModuleName as ModuleName
 import qualified Elm.Package as Pkg
+import qualified Data.Map as Map
 
 -- NAME
 newtype Name =
@@ -45,6 +48,124 @@ homeToBuilder (ModuleName.Canonical (Pkg.Name author project) home) =
 fromKernel :: Name.Name -> Name.Name -> Name
 fromKernel home name =
   Name ("_" <> Name.toBuilder home <> "_" <> Name.toBuilder name)
+
+
+-- CONSTRUCTORS
+fromIndex :: Index.ZeroBased -> Name
+fromIndex index =
+  fromInt (Index.toMachine index)
+
+
+fromInt :: Int -> Name
+fromInt n =
+  Name (Name.toBuilder (intToAscii n))
+
+-- INT TO ASCII
+
+
+intToAscii :: Int -> Name.Name
+intToAscii n =
+  if n < 53 then -- skip $ as a standalone name
+    Name.fromWords [toByte n]
+
+  else
+    intToAsciiHelp 2 (numStartBytes * numInnerBytes) allBadFields (n - 53)
+
+
+intToAsciiHelp :: Int -> Int -> [BadFields] -> Int -> Name.Name
+intToAsciiHelp width blockSize badFields n =
+  case badFields of
+    [] ->
+      if n < blockSize then
+        unsafeIntToAscii width [] n
+      else
+        intToAsciiHelp (width + 1) (blockSize * numInnerBytes) [] (n - blockSize)
+
+    BadFields renamings : biggerBadFields ->
+      let availableSize = blockSize - Map.size renamings in
+      if n < availableSize then
+        let name = unsafeIntToAscii width [] n in
+        Map.findWithDefault name name renamings
+      else
+        intToAsciiHelp (width + 1) (blockSize * numInnerBytes) biggerBadFields (n - availableSize)
+
+
+
+-- UNSAFE INT TO ASCII
+
+
+unsafeIntToAscii :: Int -> [Word8] -> Int -> Name.Name
+unsafeIntToAscii width bytes n =
+  if width <= 1 then
+    Name.fromWords (toByte n : bytes)
+  else
+    let
+      (quotient, remainder) =
+        quotRem n numInnerBytes
+    in
+    unsafeIntToAscii (width - 1) (toByte remainder : bytes) quotient
+
+dollar :: Name
+dollar =
+  Name usd
+
+
+-- ASCII BYTES
+
+
+numStartBytes :: Int
+numStartBytes =
+  54
+
+
+numInnerBytes :: Int
+numInnerBytes =
+  64
+
+
+toByte :: Int -> Word8
+toByte n
+  | n < 26  = fromIntegral (97 + n     ) {- lower -}
+  | n < 52  = fromIntegral (65 + n - 26) {- upper -}
+  | n == 52 = 95 {- _ -}
+  | n == 53 = 36 {- $ -}
+  | n < 64  = fromIntegral (48 + n - 54) {- digit -}
+  | True    = error $ "cannot convert int " ++ show n ++ " to ASCII"
+
+
+-- BAD FIELDS
+
+
+newtype BadFields =
+  BadFields { _renamings :: Renamings }
+
+
+type Renamings =
+  Map.Map Name.Name Name.Name
+
+
+allBadFields :: [BadFields]
+allBadFields =
+  let
+    add keyword dict =
+      Map.alter (Just . addRenaming keyword) (Utf8.size keyword) dict
+  in
+    Map.elems $ Set.foldr add Map.empty cReservedWords
+
+
+addRenaming :: Name.Name -> Maybe BadFields -> BadFields
+addRenaming keyword maybeBadFields =
+  let
+    width = Utf8.size keyword
+    maxName = numStartBytes * numInnerBytes ^ (width - 1) - 1
+  in
+  case maybeBadFields of
+    Nothing ->
+      BadFields $ Map.singleton keyword (unsafeIntToAscii width [] maxName)
+
+    Just (BadFields renamings) ->
+      BadFields $ Map.insert keyword (unsafeIntToAscii width [] (maxName - Map.size renamings)) renamings
+
 
 -- TEMPORARY NAMES
 usd :: B.Builder

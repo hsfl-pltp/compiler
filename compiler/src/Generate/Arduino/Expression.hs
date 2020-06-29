@@ -4,6 +4,7 @@
 module Generate.Arduino.Expression
   ( generate
   , codeToExpr
+  , generateCtor
   , generateMain
   , Code
   ) where
@@ -259,6 +260,31 @@ crushIfsHelp visitedBranches unvisitedBranches final =
 
     visiting : unvisited ->
         crushIfsHelp (visiting : visitedBranches) unvisited final
+
+-- CTOR
+
+
+generateCtor :: Mode.Mode -> Opt.Global -> Index.ZeroBased -> Int -> Code
+generateCtor mode (Opt.Global home name) index arity =
+  let
+    argNames =
+      Index.indexedMap (\i _ -> ArduinoName.fromIndex i) [1 .. arity]
+
+    ctorTag =
+      case mode of
+        Mode.Dev _ -> Arduino.String (Name.toBuilder name)
+        Mode.Prod _ -> Arduino.Int (ctorToInt home name index)
+  in
+  generateFunction argNames $ CExpr $ Arduino.Object $
+    (ArduinoName.dollar, ctorTag) : map (\n -> (n, Arduino.Ref n)) argNames
+
+
+ctorToInt :: ModuleName.Canonical -> Name.Name -> Index.ZeroBased -> Int
+ctorToInt home name index =
+  if home == ModuleName.dict && name == "RBNode_elm_builtin" || name == "RBEmpty_elm_builtin" then
+    0 - Index.toHuman index
+  else
+    Index.toMachine index
 
 -- GENERATE MAIN
 

@@ -39,7 +39,7 @@ data Expr
 data Stmt
   = Block [Stmt]
   | EmptyStmt
-  | Var String Builder Expr
+  | Var String Name Expr
   | Decl String Builder
   | Const Expr
   | Return Expr
@@ -80,7 +80,7 @@ pretty level@(Level indent nextLevel) statement =
             [ indent
             , prettyDataType dataType
             , " "
-            , name
+            , Name.toBuilder name
             , prettyExpr nextLevel expr
             ]
         _ ->
@@ -88,7 +88,7 @@ pretty level@(Level indent nextLevel) statement =
             [ indent
             , prettyDataType dataType
             , " "
-            , name
+            , Name.toBuilder name
             , " = "
             , prettyExpr nextLevel expr
             , ";\n"
@@ -159,8 +159,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
-    Enum name exprs ->
-      mconcat ["enum ", Name.toBuilder name, prettyExpr nextLevel exprs, "\n"]
+    Object _ -> "Not supported Objects"
     Call expr1 exprs ->
       mconcat
         [prettyExpr nextLevel expr1, "(", fromExprBlock nextLevel exprs, ")"]
@@ -182,6 +181,8 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
         , fromStmtBlock nextLevel stmts
         , "}\n"
         ]
+    Enum name exprs ->
+      mconcat ["enum ", Name.toBuilder name, prettyExpr nextLevel exprs, "\n"]
 
 indexedMap :: (a -> I.Int8 -> b) -> [a] -> [b]
 indexedMap f l = zipWith f l [0 ..]
