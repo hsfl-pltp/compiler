@@ -7,12 +7,11 @@ Serial.print('Compiled in DEV mode.');
 		void* tmp0; 
 			return Not supported Objects;
 }
-	void* _author_project_Test_main = if (false) { 
+if (false) { 
 1
 } else { 
  0
- };
-
+}
 //The Code here will only be executed once 
 }
 

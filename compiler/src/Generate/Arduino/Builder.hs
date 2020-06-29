@@ -83,6 +83,11 @@ pretty level@(Level indent nextLevel) statement =
             , Name.toBuilder name
             , prettyExpr nextLevel expr
             ]
+        If _ _ _ ->
+          mconcat
+            [
+              prettyExpr nextLevel expr
+            ]
         _ ->
           mconcat
             [ indent
