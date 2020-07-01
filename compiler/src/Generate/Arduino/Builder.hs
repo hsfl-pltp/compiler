@@ -164,7 +164,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
-    Object _ -> "Not supported Objects"
+    Object _ -> error "Not supported Objects"
     Call expr1 exprs ->
       mconcat
         [prettyExpr nextLevel expr1, "(", fromExprBlock nextLevel exprs, ")"]
