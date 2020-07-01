@@ -95,7 +95,7 @@ devArduino root details (Build.Artifacts pkg ifaces roots modules) = do
   let mode = Mode.Dev Nothing
   let graph = objectsToGlobalGraph objects
   let mains = gatherMains pkg objects roots
-  T.trace (show objects) (return (Arduino.generate mode graph mains)) --the output can be viewed here https://github.com/Alcatracz/Masterprojekt/blob/master/Misc/generate-object-content.js
+  (return (Arduino.generate mode graph mains)) --the output can be viewed here https://github.com/Alcatracz/Masterprojekt/blob/master/Misc/generate-object-content.js
 
 -- CHECK FOR DEBUG
 checkForDebugUses :: Objects -> Task ()
