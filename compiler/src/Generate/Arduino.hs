@@ -57,8 +57,8 @@ perfNote :: Mode.Mode -> B.Builder
 perfNote mode =
   case mode of
     Mode.Prod _       -> ""
-    Mode.Dev Nothing  -> "Serial.print('Compiled in DEV mode.');"
-    Mode.Dev (Just _) -> "Serial.print('Compiled in DEBUG mode.');"
+    Mode.Dev Nothing  -> "Serial.print(\"Compiled in DEV mode.\");"
+    Mode.Dev (Just _) -> "Serial.print(\"Compiled in DEBUG mode.\");"
 
 -- GRAPH TRAVERSAL STATE
 emptyState :: State
