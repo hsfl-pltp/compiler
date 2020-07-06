@@ -15,10 +15,12 @@ import Text.RawString.QQ (r)
 -- SANDWICH
 
 
-sandwichArduino :: B.Builder -> B.Builder -> B.Builder
-sandwichArduino ccode mode =
+sandwichArduino :: B.Builder -> B.Builder -> B.Builder -> B.Builder
+sandwichArduino ccode functionDefs mode =
   [r|
 #include <stdlib.h> 
+
+|] <> functionDefs <> [r|
 void setup() {
 Serial.begin(9600);
 |] <> mode <> [r|

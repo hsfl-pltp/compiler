@@ -41,16 +41,18 @@ type Mains = Map.Map ModuleName.Canonical Opt.Main
 
 generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
 generate mode (Opt.GlobalGraph graph _) mains =
-  let state = Map.foldrWithKey (addMain mode graph) emptyState mains
+  let state = Map.foldrWithKey (addMain mode False graph) emptyState mains
    in 
+     let functionDefs = Map.foldrWithKey (addMain mode True graph) emptyState mains
+      in 
      --perfNote mode <> "\n" <> 
-     BP.sandwichArduino (stateToBuilder state) (perfNote mode)
+        BP.sandwichArduino (stateToBuilder state) (stateToBuilder functionDefs) (perfNote mode)
 
 
 addMain ::
-     Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
-addMain mode graph home _ state =
-    addGlobal mode graph state (Opt.Global home "main")
+     Mode.Mode -> Bool -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
+addMain mode filterForFunctions graph home _ state =
+    addGlobal mode filterForFunctions graph state (Opt.Global home "main")
  -- addGlobal mode (T.trace ("Trace dat graph" ++ show graph) graph) state (Opt.Global home "main")
 
 perfNote :: Mode.Mode -> B.Builder
@@ -80,27 +82,38 @@ prependBuilders revBuilders monolith =
   List.foldl' (\m b -> b <> m) monolith revBuilders
 
 -- ADD DEPENDENCIES
-addGlobal :: Mode.Mode -> Graph -> State -> Opt.Global -> State
-addGlobal mode graph state@(State revKernels builders seen) global =
+addGlobal :: Mode.Mode -> Bool -> Graph -> State -> Opt.Global -> State
+addGlobal mode filterForFunctions graph state@(State revKernels builders seen) global =
   if Set.member (T.trace ("Trace global" ++ show global) global) seen
     then state
-    else addGlobalHelp mode graph global $
+    else addGlobalHelp mode filterForFunctions graph global $
          State revKernels builders (Set.insert global seen)
 
-addGlobalHelp :: Mode.Mode -> Graph -> Opt.Global -> State -> State
-addGlobalHelp mode graph global state =
-  let addDeps deps someState = Set.foldl' (addGlobal mode graph) someState deps
+addGlobalHelp :: Mode.Mode -> Bool -> Graph -> Opt.Global -> State -> State
+addGlobalHelp mode filterForFunctions graph global state =
+  let addDeps deps someState = Set.foldl' (addGlobal mode filterForFunctions graph) someState deps
    in case graph ! global of
         Opt.Define expr deps ->
-          addStmt (addDeps deps state) (var global (Expr.generate expr))
+          addStmt (addDeps deps state) filterForFunctions (var global (Expr.generate expr))
     -- For testing purposes we ignore the kernel code
         Opt.Kernel chunks deps -- T.trace (show (Opt.Kernel chunks deps)) state
          -> state
-        Opt.Enum index -> addStmt state (generateEnum mode global index)
+        Opt.Enum index -> addStmt state filterForFunctions (generateEnum mode global index)
         expr -> error ("unsupported argument: " ++ show expr)
 
-addStmt :: State -> Arduino.Stmt -> State
-addStmt state stmt = addBuilder state (Arduino.stmtToBuilder stmt)
+addStmt :: State -> Bool -> Arduino.Stmt -> State
+addStmt state filterForFunctions stmt =
+  case stmt of
+    Arduino.Var dataType name expr -> 
+      case expr of
+        Arduino.Function _ _ _ ->  
+          if filterForFunctions then addBuilder state (Arduino.stmtToBuilder stmt)
+          else state
+        _ ->  
+          if filterForFunctions then state
+          else addBuilder state (Arduino.stmtToBuilder stmt)
+  
+    _ -> state
 
 addBuilder :: State -> B.Builder -> State
 addBuilder (State revKernels revBuilders seen) builder =
