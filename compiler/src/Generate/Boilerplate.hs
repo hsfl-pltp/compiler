@@ -18,7 +18,7 @@ import Text.RawString.QQ (r)
 sandwichArduino :: B.Builder -> B.Builder -> B.Builder
 sandwichArduino ccode mode =
   [r|
-
+#include <stdlib.h> 
 void setup() {
 Serial.begin(9600);
 |] <> mode <> [r|
