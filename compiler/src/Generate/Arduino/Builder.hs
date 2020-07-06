@@ -85,9 +85,13 @@ pretty level@(Level indent nextLevel) statement =
             ]
         If _ _ _ ->
           mconcat
-            [
-              prettyExpr nextLevel expr
-            ]
+          [ indent
+          , prettyDataType dataType
+          , " "
+          , Name.toBuilder name
+          , " = "
+          , prettyExpr nextLevel expr
+          ]
         _ ->
           mconcat
             [ indent
@@ -103,13 +107,13 @@ pretty level@(Level indent nextLevel) statement =
     Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
     IfStmt condition thenStmt elseStmt ->
       mconcat
-        [ "if ("
+        [ "("
         , prettyExpr nextLevel condition
-        , ") {\n"
+        , ") ? "
         , pretty nextLevel thenStmt
-        , "} else {\n"
+        , " : "
         , pretty nextLevel elseStmt
-        , "}\n"
+        , ";"
         ]
     WhileStmt condition loopStmt ->
       mconcat
@@ -153,13 +157,13 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Double double -> double
     If infixExpr expr1 expr2 ->
       mconcat
-        [ "if ("
+        [ "("
         , prettyExpr nextLevel infixExpr
-        , ") { \n"
+        , ") ? "
         , prettyExpr nextLevel expr1
-        , "\n} else { \n "
+        , " : "
         , prettyExpr nextLevel expr2
-        , "\n }"
+        , ";"
         ]
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
