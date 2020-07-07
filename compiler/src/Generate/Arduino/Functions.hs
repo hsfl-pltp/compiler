@@ -11,14 +11,12 @@ import Text.RawString.QQ (r)
 functions :: B.Builder
 functions =
   [r|
-
-
 typedef struct {
   float value;
 } Elmfloat;
 
 Elmfloat* NewElmFloat(float value) {
-  Elmfloat* p = sizeof(Elmfloat);
+  Elmfloat* p = malloc(sizeof(Elmfloat));
   p->value = value;
   return p;
 };

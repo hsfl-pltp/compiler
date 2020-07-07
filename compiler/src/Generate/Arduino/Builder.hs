@@ -156,7 +156,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
         then "true"
         else "false"
     Int n -> B.intDec n
-    Double double ->"&(Elmfloat){.value = "<> double <>" }"
+    Double double ->"NewElmFloat("<> double <>")"
     If infixExpr expr1 expr2 ->
       mconcat
         [ "("
