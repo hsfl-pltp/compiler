@@ -91,6 +91,7 @@ pretty level@(Level indent nextLevel) statement =
           , Name.toBuilder name
           , " = "
           , prettyExpr nextLevel expr
+          , ";\n"
           ]
         _ ->
           mconcat
@@ -113,7 +114,6 @@ pretty level@(Level indent nextLevel) statement =
         , pretty nextLevel thenStmt
         , " : "
         , pretty nextLevel elseStmt
-        , ";"
         ]
     WhileStmt condition loopStmt ->
       mconcat
@@ -163,7 +163,6 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
         , prettyExpr nextLevel expr1
         , " : "
         , prettyExpr nextLevel expr2
-        , ";"
         ]
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
