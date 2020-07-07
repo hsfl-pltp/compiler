@@ -125,7 +125,7 @@ generateNormalCall :: Arduino.Expr -> [Arduino.Expr] -> Arduino.Expr
 generateNormalCall func args =
   case IntMap.lookup (length args) callHelpers of
     Just helper ->
-      Arduino.Call helper (func:args)
+      Arduino.Call func args
 
     Nothing ->
       List.foldl' (\f a -> Arduino.Call f [a]) func args

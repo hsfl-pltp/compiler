@@ -129,7 +129,7 @@ pretty level@(Level indent nextLevel) statement =
         , "( void* args ) {\n"
         , indent
         , "void* tmp0;"
-        , argsToBuilder args indent
+        , argsToBuilder args
         , fromStmtBlock nextLevel stmts
         , "}\n"
         ]
@@ -184,10 +184,10 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Function maybeName args stmts ->
       mconcat
         [ maybe mempty Name.toBuilder maybeName
-        , "( void* args[] ) {\n"
+        , "(" 
+        , commaSep (map (\x -> "void* "<> Name.toBuilder x) args)
+        , ") {\n"
         , indent
-        , "void* tmp0; \n"
-        , argsToBuilder args indent
         , fromStmtBlock nextLevel stmts
         , "}\n"
         ]
@@ -205,6 +205,7 @@ argsToBuilder args indent =
           indent <>
           "void* " <> Name.toBuilder x <> " = args[" <> (B.int8Dec i) <> "]; \n")
        args)
+
 
 commaSep :: [Builder] -> Builder
 commaSep builders = mconcat (List.intersperse ", " builders)

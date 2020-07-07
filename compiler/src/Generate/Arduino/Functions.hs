@@ -11,13 +11,29 @@ import Text.RawString.QQ (r)
 functions :: B.Builder
 functions =
   [r|
-  #define A1(f, a) Utils_apply(f, 1, (void* []){a})
-  #define A2(f, a, b) Utils_apply(f, 2, (void* []){a, b})
 
 
-void* Utils_apply(void* fun, int n_applied, void* applied[]) {
-  void** args;
-  
+typedef struct {
+  float value;
+} Elmfloat;
+
+Elmfloat* NewElmFloat(float value) {
+  Elmfloat* p = sizeof(Elmfloat);
+  p->value = value;
+  return p;
+};
+
+float VoidToFloat (void* erg){
+  return *((float *) erg);
+}
+
+static void* eval_add(void* n, void* m) {
+  Elmfloat* pa = n;
+  Elmfloat* pb = m;
+  float ia = pa->value;
+  float ib = pb->value;
+  float i = ia + ib;
+  return NewElmFloat(i);
 }
 
 |]

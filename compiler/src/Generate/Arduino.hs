@@ -33,6 +33,7 @@ import qualified Generate.JavaScript.Builder     as JS
 import qualified Generate.JavaScript.Expression  as JSExpr
 import qualified Generate.JavaScript.Functions   as JSFunctions
 import qualified Generate.JavaScript.Name        as JsName
+import qualified Generate.Arduino.Functions   as Functions
 
 -- GENERATE
 type Graph = Map.Map Opt.Global Opt.Node
@@ -43,8 +44,10 @@ generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
 generate mode (Opt.GlobalGraph graph _) mains =
   let state = Map.foldrWithKey (addMain mode graph) emptyState mains
    in 
+    Functions.functions <>
+    stateToBuilder state<>
      --perfNote mode <> "\n" <> 
-     BP.sandwichArduino (stateToBuilder state) (perfNote mode)
+     BP.sandwichArduino ("") (perfNote mode)
 
 
 addMain ::
