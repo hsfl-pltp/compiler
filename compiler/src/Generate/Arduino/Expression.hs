@@ -168,9 +168,8 @@ generateBasicsCall home name args =
             left = generateArduinoExpr elmLeft
             right = generateArduinoExpr elmRight
           in
-           case name of
-            "add"  -> Arduino.Infix Arduino.OpAdd left right
-            _      -> generateGlobalCall home name [left, right]
+            generateGlobalCall home name [left, right]
+  
 
     _ ->
       generateGlobalCall home name (map (generateArduinoExpr) args)
