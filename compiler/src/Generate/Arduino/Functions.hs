@@ -27,7 +27,7 @@ float VoidToFloat (void* erg){
   return *((float *) erg);
 }
 
-static void* eval_add(void* n, void* m) {
+static void* _Basics_add(void* n, void* m) {
   Elmfloat* pa = n;
   Elmfloat* pb = m;
   float ia = pa->value;

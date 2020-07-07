@@ -34,6 +34,7 @@ data Expr
   | Infix InfixOp Expr Expr
   | Function (Maybe Name) [Name] [Stmt]
   | Enum Name Expr
+  | CoreRef Name
 
 -- STATEMENTS
 data Stmt
@@ -93,6 +94,8 @@ pretty level@(Level indent nextLevel) statement =
           , prettyExpr nextLevel expr
           , ";\n"
           ]
+        CoreRef subname ->
+          "#define " <> Name.toBuilder name <> " " <> Name.toBuilder subname <> "\n"
         _ ->
           mconcat
             [ indent
@@ -129,7 +132,7 @@ pretty level@(Level indent nextLevel) statement =
         , "( void* args ) {\n"
         , indent
         , "void* tmp0;"
-        , argsToBuilder args
+        , argsToBuilder args indent
         , fromStmtBlock nextLevel stmts
         , "}\n"
         ]
@@ -152,9 +155,8 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
       if bool
         then "true"
         else "false"
-    Integer integer -> integer
     Int n -> B.intDec n
-    Double double -> double
+    Double double ->"&(Elmfloat){.value = "<> double <>" }"
     If infixExpr expr1 expr2 ->
       mconcat
         [ "("

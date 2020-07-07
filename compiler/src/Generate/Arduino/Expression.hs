@@ -27,6 +27,7 @@ import qualified Data.Utf8 as Utf8
 import qualified Generate.Mode as Mode
 import qualified Elm.Package as Pkg
 import qualified Data.Index as Index
+
 generateArduinoExpr :: Opt.Expr -> Arduino.Expr
 generateArduinoExpr expression =
   codeToExpr (generate expression)
@@ -40,7 +41,7 @@ generate expr =
     Opt.Int int -> CExpr (Arduino.Double (convertInt int))
     Opt.Float float -> CExpr (Arduino.Double (convertFloat float))
     Opt.If branches final -> generateIf branches final
-    Opt.VarKernel home name -> CExpr (Arduino.Ref (ArduinoName.fromKernel home name))
+    Opt.VarKernel home name -> CExpr (Arduino.CoreRef (ArduinoName.fromKernel home name))
     Opt.Call func args -> CExpr (generateCall func args)
     Opt.VarEnum (Opt.Global home name) index ->
         CExpr (Arduino.Enum (ArduinoName.fromLocal name) ( Arduino.Int (Index.toMachine index)))
