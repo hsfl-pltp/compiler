@@ -163,7 +163,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
         then "true"
         else "false"
     Int n -> B.intDec n
-    Double double ->"NewElmFloat("<> double <>")"
+    Double double ->"_Basics_newElmFloat("<> double <>")"
     If infixExpr expr1 expr2 ->
       mconcat
         [ "("
