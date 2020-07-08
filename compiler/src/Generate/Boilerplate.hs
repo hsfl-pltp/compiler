@@ -20,10 +20,10 @@ sandwichArduino ccode mode =
   [r|
 #include <stdlib.h> 
 void setup() {
-Serial.begin(9600);
-|] <> mode <> [r|
+    Serial.begin(9600);
+    |] <> mode <> [r|
 |] <> ccode <> [r|
-//The Code here will only be executed once 
+    //The Code here will only be executed once 
 }
 
 void loop() {
