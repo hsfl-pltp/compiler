@@ -12,26 +12,26 @@ functions :: B.Builder
 functions =
   [r|
 typedef struct {
-  float value;
+    float value;
 } Elmfloat;
 
 Elmfloat* NewElmFloat(float value) {
-  Elmfloat* p = malloc(sizeof(Elmfloat));
-  p->value = value;
-  return p;
+    Elmfloat* p = malloc(sizeof(Elmfloat));
+    p->value = value;
+    return p;
 };
 
 float VoidToFloat (void* erg){
-  return *((float *) erg);
+    return *((float *) erg);
 }
 
 static void* _Basics_add(void* n, void* m) {
-  Elmfloat* pa = n;
-  Elmfloat* pb = m;
-  float ia = pa->value;
-  float ib = pb->value;
-  float i = ia + ib;
-  return NewElmFloat(i);
+    Elmfloat* pa = n;
+    Elmfloat* pb = m;
+    float ia = pa->value;
+    float ib = pb->value;
+    float i = ia + ib;
+    return NewElmFloat(i);
 }
 
 |]

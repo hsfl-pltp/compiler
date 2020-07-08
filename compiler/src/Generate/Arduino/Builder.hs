@@ -65,7 +65,7 @@ prettyDataType dataType =
     "any" -> "void*"
 
 stmtToBuilder :: Stmt -> Builder
-stmtToBuilder stmts = pretty (levelAny 1) stmts
+stmtToBuilder stmts = pretty levelZero stmts
 
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Level -> Stmt -> Builder
@@ -95,7 +95,14 @@ pretty level@(Level indent nextLevel) statement =
           , ";\n"
           ]
         CoreRef subname ->
-          "#define " <> Name.toBuilder name <> " " <> Name.toBuilder subname <> "\n"
+          mconcat
+            [ indent 
+            , "#define "
+            , Name.toBuilder name
+            , " "
+            , Name.toBuilder subname
+            , "\n"
+            ]
         _ ->
           mconcat
             [ indent
@@ -189,7 +196,6 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
         , "(" 
         , commaSep (map (\x -> "void* "<> Name.toBuilder x) args)
         , ") {\n"
-        , indent
         , fromStmtBlock nextLevel stmts
         , "}\n"
         ]
