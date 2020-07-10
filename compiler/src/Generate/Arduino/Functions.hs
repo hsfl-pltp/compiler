@@ -61,4 +61,12 @@ static void* _Basics_sub(void* n, void* m) {
     return _Basics_newElmFloat(i);
 }
 
+static void* _Debug_log(String n, void* m) {
+    Serial.begin(9600);
+    Serial.print(n);
+    Serial.print(" ");
+    Serial.println(_Basics_voidToFloat(m));
+    return m;    
+} 
+
 |]
