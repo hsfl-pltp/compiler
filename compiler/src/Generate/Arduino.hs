@@ -40,11 +40,11 @@ type Graph = Map.Map Opt.Global Opt.Node
 
 type Mains = Map.Map ModuleName.Canonical Opt.Main
 
-generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
+generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder 
 generate mode (Opt.GlobalGraph graph _) mains =
   let state = Map.foldrWithKey (addMain mode graph) emptyState mains
    in Functions.functions <>
-      stateToBuilder state <> BP.sandwichArduino ("") (perfNote mode)
+      stateToBuilder state <> BP.sandwichArduino ("") (perfNote mode) (toMainNames mode mains)
 
 
 addMain ::
@@ -156,34 +156,27 @@ addChunk mode chunk builder =
         Mode.Prod _ -> builder
         
 -- MAIN EXPORTS
-toMainExports :: Mode.Mode -> Mains -> B.Builder
-toMainExports mode mains =
-  let export = ArduinoName.fromKernel Name.platform "export"
-      exports =
-        generateExports mode (Map.foldrWithKey addToTrie emptyTrie mains)
-   in ArduinoName.toBuilder export <> "(" <> exports <> ");"
+toMainNames :: Mode.Mode -> Mains -> B.Builder
+toMainNames mode mains =
+  let mainNames = 
+        generateMainNames mode (Map.foldrWithKey addToTrie emptyTrie mains)
+   in  mainNames 
 
-generateExports :: Mode.Mode -> Trie -> B.Builder
-generateExports mode (Trie maybeMain subs) =
+generateMainNames :: Mode.Mode -> Trie -> B.Builder
+generateMainNames mode (Trie maybeMain subs) =
   let starter end =
         case maybeMain of
-          Nothing -> "{"
+          Nothing -> ""
           Just (home, main) ->
-            "{'init':" <>
-            Arduino.exprToBuilder (Expr.generateMain mode home main) <> end
+            Arduino.exprToBuilder (Expr.generateMain mode home main) 
    in case Map.toList subs of
-        [] -> starter "" <> "}"
+        [] -> starter "" 
         (name, subTrie):otherSubTries ->
-          starter "," <>
-          "'" <>
-          Utf8.toBuilder name <>
-          "':" <>
-          generateExports mode subTrie <>
-          List.foldl' (addSubTrie mode) "}" otherSubTries
+          generateMainNames mode subTrie 
 
-addSubTrie :: Mode.Mode -> B.Builder -> (Name.Name, Trie) -> B.Builder
-addSubTrie mode end (name, trie) =
-  ",'" <> Utf8.toBuilder name <> "':" <> generateExports mode trie <> end
+addSubTries :: Mode.Mode -> B.Builder -> (Name.Name, Trie) -> B.Builder
+addSubTries mode end (name, trie) =
+  ",'" <> Utf8.toBuilder name <> "':" <> generateMainNames mode trie <> end
 
 -- BUILD TRIES
 data Trie =

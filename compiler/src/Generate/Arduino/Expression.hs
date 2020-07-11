@@ -293,10 +293,8 @@ generateMain :: Mode.Mode -> ModuleName.Canonical -> Opt.Main -> Arduino.Expr
 generateMain mode home main =
   case main of
     Opt.Static ->
-      Arduino.Ref (ArduinoName.fromKernel Name.virtualDom "init")
-        # Arduino.Ref (ArduinoName.fromGlobal home "main")
-        # Arduino.Int 0
-        # Arduino.Int 0
+     Arduino.Ref (ArduinoName.fromGlobal home "main")
+        
 
     Opt.Dynamic msgType decoder ->
       Arduino.Ref (ArduinoName.fromGlobal home "main")
