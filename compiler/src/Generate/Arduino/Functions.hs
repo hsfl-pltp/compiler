@@ -11,13 +11,25 @@ import Text.RawString.QQ (r)
 functions :: B.Builder
 functions =
   [r|
+
+typedef enum {
+  Tag_Float,            // 0
+} Tag;
+
 typedef struct {
     float value;
+    Tag tag;
 } ElmFloat;
+
+typedef union {
+  ElmFloat elm_float;
+} ElmValue;
+
 
 ElmFloat* _Basics_newElmFloat(float value) {
     ElmFloat* p = (ElmFloat*)malloc(sizeof(ElmFloat));
     p->value = value;
+    p->tag = Tag_Float;
     return p;
 };
 
@@ -60,12 +72,22 @@ static void* _Basics_sub(ElmFloat* n, ElmFloat* m) {
     float i = ia - ib;
     return _Basics_newElmFloat(i);
 }
+static void* _Debug_log__Prod(String n, void* m) {
+  return m;
+}
 
 static void* _Debug_log(String n, void* m) {
+    ElmValue* v = m;
+    String output = n + " ";
+
+    if(v->elm_float.tag == Tag_Float){
+        output = output + _Basics_voidToFloat(m);      
+    } else {
+        output = "No valid type";
+    }
+    
     Serial.begin(9600);
-    Serial.print(n);
-    Serial.print(" ");
-    Serial.println(_Basics_voidToFloat(m));
+    Serial.println(output);
     return m;
 }
 
