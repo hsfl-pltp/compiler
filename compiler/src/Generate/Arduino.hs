@@ -44,7 +44,7 @@ generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
 generate mode (Opt.GlobalGraph graph _) mains =
   let state = Map.foldrWithKey (addMain mode graph) emptyState mains
    in Functions.functions <>
-      stateToBuilder state <> BP.sandwichArduino ("") (perfNote mode) (toMainNames mode mains)
+      stateToBuilder state <> BP.sandwichArduino (perfNote mode) (toMainNames mode mains)
 
 
 addMain ::
