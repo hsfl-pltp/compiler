@@ -110,9 +110,9 @@ pretty level@(Level indent nextLevel) statement =
             , prettyDataType dataType
             , " "
             , Name.toBuilder name
-            , " = "
+            , "(){\n "
             , prettyExpr nextLevel expr
-            , ";\n"
+            , ";\n};\n"
             ]
     Decl dataType name -> mconcat [prettyDataType dataType, " ", name]
     Const constExpr -> mconcat ["const ", prettyExpr nextLevel constExpr, ";\n"]
@@ -178,7 +178,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
 
-    Object _ -> "Serial.print(\"Compiled in DEV mode.\");\nexit(EXIT_FAILURE)"
+    Object _ -> "Serial.print(\"Object is not supported yet\");\nexit(EXIT_FAILURE)"
 
     Call expr1 exprs ->
       mconcat
