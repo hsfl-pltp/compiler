@@ -119,7 +119,7 @@ pretty level@(Level indent nextLevel) statement =
     Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
     IfStmt condition thenStmt elseStmt ->
       mconcat
-        [ "("
+        [ " ("
         , prettyExpr nextLevel condition
         , ") ? "
         , pretty nextLevel thenStmt
@@ -167,7 +167,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Double double ->"_Basics_newElmFloat("<> double <>")"
     If infixExpr expr1 expr2 ->
       mconcat
-        [ "("
+        [ "    ("
         , prettyExpr nextLevel infixExpr
         , ") ? "
         , prettyExpr nextLevel expr1
@@ -178,7 +178,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
 
-    Object _ -> "Serial.print(\"Object is not supported yet\");\nexit(EXIT_FAILURE)"
+    Object _ -> "Serial.print(\"Object is not supported yet\");\n    exit(EXIT_FAILURE)"
 
     Call expr1 exprs ->
       mconcat
