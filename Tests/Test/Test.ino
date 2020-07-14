@@ -1,16 +1,4 @@
-{-# LANGUAGE OverloadedStrings, QuasiQuotes #-}
 
-module Generate.Arduino.Functions
-  ( functions
-  ) where
-
-import qualified Data.ByteString.Builder as B
-import Text.RawString.QQ (r)
-
--- FUNCTIONS
-functions :: B.Builder
-functions =
-  [r|
 typedef struct {
     float value;
 } ElmFloat;
@@ -69,4 +57,24 @@ static void* _Debug_log(String n, void* m) {
     return m;
 }
 
-|]
+void* _elm_core_Basics_False() {
+		return Serial.print("Compiled in DEV mode.");
+exit(EXIT_FAILURE);
+}
+void* _author_project_Test_main = (false) ? _Basics_newElmFloat(1) : _Basics_newElmFloat(0);
+
+#include <stdlib.h> 
+
+void setup() {
+   
+    Serial.begin(9600);
+    Serial.println("Compiled in DEV mode.");
+
+    //The Code here will only be executed once 
+_author_project_Test_main()
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+}
