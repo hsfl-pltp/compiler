@@ -33,6 +33,7 @@ import qualified Generate.JavaScript.Builder     as JS
 import qualified Generate.JavaScript.Expression  as JSExpr
 import qualified Generate.JavaScript.Functions   as JSFunctions
 import qualified Generate.JavaScript.Name        as JsName
+import qualified Generate.Arduino.Functions   as Functions
 
 import qualified Data.ByteString.Char8 as By
 
@@ -41,12 +42,11 @@ type Graph = Map.Map Opt.Global Opt.Node
 
 type Mains = Map.Map ModuleName.Canonical Opt.Main
 
-generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
+generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder 
 generate mode (Opt.GlobalGraph graph _) mains =
   let state = Map.foldrWithKey (addMain mode graph) emptyState mains
-   in 
-     --perfNote mode <> "\n" <> 
-     BP.sandwichArduino (stateToBuilder state) (perfNote mode)
+   in Functions.functions <>
+      stateToBuilder state <> BP.sandwichArduino ("") (perfNote mode) (toMainNames mode mains)
 
 
 addMain ::
@@ -59,8 +59,8 @@ perfNote :: Mode.Mode -> B.Builder
 perfNote mode =
   case mode of
     Mode.Prod _       -> ""
-    Mode.Dev Nothing  -> "Serial.print('Compiled in DEV mode.');"
-    Mode.Dev (Just _) -> "Serial.print('Compiled in DEBUG mode.');"
+    Mode.Dev Nothing  -> "Serial.println(\"Compiled in DEV mode.\");"
+    Mode.Dev (Just _) -> "Serial.println(\"Compiled in DEBUG mode.\");"
 
 -- GRAPH TRAVERSAL STATE
 emptyState :: State
@@ -155,34 +155,27 @@ addChunk mode chunk builder =
     K.Prod -> builder
         
 -- MAIN EXPORTS
-toMainExports :: Mode.Mode -> Mains -> B.Builder
-toMainExports mode mains =
-  let export = ArduinoName.fromKernel Name.platform "export"
-      exports =
-        generateExports mode (Map.foldrWithKey addToTrie emptyTrie mains)
-   in ArduinoName.toBuilder export <> "(" <> exports <> ");"
+toMainNames :: Mode.Mode -> Mains -> B.Builder
+toMainNames mode mains =
+  let mainNames = 
+        generateMainNames mode (Map.foldrWithKey addToTrie emptyTrie mains)
+   in  mainNames 
 
-generateExports :: Mode.Mode -> Trie -> B.Builder
-generateExports mode (Trie maybeMain subs) =
+generateMainNames :: Mode.Mode -> Trie -> B.Builder
+generateMainNames mode (Trie maybeMain subs) =
   let starter end =
         case maybeMain of
-          Nothing -> "{"
+          Nothing -> ""
           Just (home, main) ->
-            "{'init':" <>
-            Arduino.exprToBuilder (Expr.generateMain mode home main) <> end
+            Arduino.exprToBuilder (Expr.generateMain mode home main) 
    in case Map.toList subs of
-        [] -> starter "" <> "}"
+        [] -> starter "" 
         (name, subTrie):otherSubTries ->
-          starter "," <>
-          "'" <>
-          Utf8.toBuilder name <>
-          "':" <>
-          generateExports mode subTrie <>
-          List.foldl' (addSubTrie mode) "}" otherSubTries
+          generateMainNames mode subTrie 
 
-addSubTrie :: Mode.Mode -> B.Builder -> (Name.Name, Trie) -> B.Builder
-addSubTrie mode end (name, trie) =
-  ",'" <> Utf8.toBuilder name <> "':" <> generateExports mode trie <> end
+addSubTries :: Mode.Mode -> B.Builder -> (Name.Name, Trie) -> B.Builder
+addSubTries mode end (name, trie) =
+  ",'" <> Utf8.toBuilder name <> "':" <> generateMainNames mode trie <> end
 
 -- BUILD TRIES
 data Trie =

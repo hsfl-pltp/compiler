@@ -2,6 +2,7 @@ worker/*
 dist-newstyle/*
 elm-stuff
 dist
+Test.ino
 cabal-dev
 .cabal-sandbox/
 cabal.sandbox.config

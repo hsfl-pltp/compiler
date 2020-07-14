@@ -11,13 +11,62 @@ import Text.RawString.QQ (r)
 functions :: B.Builder
 functions =
   [r|
-  #define A1(f, a) Utils_apply(f, 1, (void* []){a})
-  #define A2(f, a, b) Utils_apply(f, 2, (void* []){a, b})
+typedef struct {
+    float value;
+} ElmFloat;
 
+ElmFloat* _Basics_newElmFloat(float value) {
+    ElmFloat* p = (ElmFloat*)malloc(sizeof(ElmFloat));
+    p->value = value;
+    return p;
+};
 
-void* Utils_apply(void* fun, int n_applied, void* applied[]) {
-  void** args;
-  
+float _Basics_voidToFloat (void* pointer){
+    return *((float *) pointer);
+}
+
+static void* _Basics_add(ElmFloat* n, ElmFloat* m) {
+    ElmFloat* pa = n;
+    ElmFloat* pb = m;
+    float ia = pa->value;
+    float ib = pb->value;
+    float i = ia + ib;
+    return _Basics_newElmFloat(i);
+}
+
+static void* _Basics_mul(ElmFloat* n, ElmFloat* m) {
+    ElmFloat* pa = n;
+    ElmFloat* pb = m;
+    float ia = pa->value;
+    float ib = pb->value;
+    float i = ia * ib;
+    return _Basics_newElmFloat(i);
+}
+
+static void* _Basics_div(ElmFloat* n, ElmFloat* m) {
+    ElmFloat* pa = n;
+    ElmFloat* pb = m;
+    float ia = pa->value;
+    float ib = pb->value;
+    float i = ia / ib;
+    return _Basics_newElmFloat(i);
+}
+
+static void* _Basics_sub(ElmFloat* n, ElmFloat* m) {
+    ElmFloat* pa = n;
+    ElmFloat* pb = m;
+    float ia = pa->value;
+    float ib = pb->value;
+    float i = ia - ib;
+    return _Basics_newElmFloat(i);
+}
+
+static void* _Debug_log(String n, void* m) {
+    Serial.begin(9600);
+    Serial.print(n);
+    Serial.print(" ");
+    Serial.println(_Basics_voidToFloat(m));
+    return m;
 }
 
 |]

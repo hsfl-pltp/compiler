@@ -15,15 +15,18 @@ import Text.RawString.QQ (r)
 -- SANDWICH
 
 
-sandwichArduino :: B.Builder -> B.Builder -> B.Builder
-sandwichArduino ccode mode =
+sandwichArduino :: B.Builder -> B.Builder -> B.Builder -> B.Builder
+sandwichArduino ccode mode mainNames =
   [r|
+#include <stdlib.h> 
 
 void setup() {
-Serial.begin(9600);
-|] <> mode <> [r|
+   
+    Serial.begin(9600);
+    |] <> mode <> [r|
 |] <> ccode <> [r|
-//The Code here will only be executed once 
+    //The Code here will only be executed once 
+|] <> mainNames <>  [r|()
 }
 
 void loop() {

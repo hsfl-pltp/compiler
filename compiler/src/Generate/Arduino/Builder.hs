@@ -34,6 +34,7 @@ data Expr
   | Infix InfixOp Expr Expr
   | Function (Maybe Name) [Name] [Stmt]
   | Enum Name Expr
+  | CoreRef Name
 
 -- STATEMENTS
 data Stmt
@@ -64,7 +65,7 @@ prettyDataType dataType =
     "any" -> "void*"
 
 stmtToBuilder :: Stmt -> Builder
-stmtToBuilder stmts = pretty (levelAny 1) stmts
+stmtToBuilder stmts = pretty levelZero stmts
 
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Level -> Stmt -> Builder
@@ -85,8 +86,22 @@ pretty level@(Level indent nextLevel) statement =
             ]
         If _ _ _ ->
           mconcat
-            [
-              prettyExpr nextLevel expr
+          [ indent
+          , prettyDataType dataType
+          , " "
+          , Name.toBuilder name
+          , " = "
+          , prettyExpr nextLevel expr
+          , ";\n"
+          ]
+        CoreRef subname ->
+          mconcat
+            [ indent 
+            , "#define "
+            , Name.toBuilder name
+            , " "
+            , Name.toBuilder subname
+            , "\n"
             ]
         _ ->
           mconcat
@@ -103,13 +118,12 @@ pretty level@(Level indent nextLevel) statement =
     Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
     IfStmt condition thenStmt elseStmt ->
       mconcat
-        [ "if ("
+        [ "("
         , prettyExpr nextLevel condition
-        , ") {\n"
+        , ") ? "
         , pretty nextLevel thenStmt
-        , "} else {\n"
+        , " : "
         , pretty nextLevel elseStmt
-        , "}\n"
         ]
     WhileStmt condition loopStmt ->
       mconcat
@@ -148,23 +162,23 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
       if bool
         then "true"
         else "false"
-    Integer integer -> integer
     Int n -> B.intDec n
-    Double double -> double
+    Double double ->"_Basics_newElmFloat("<> double <>")"
     If infixExpr expr1 expr2 ->
       mconcat
-        [ "if ("
+        [ "("
         , prettyExpr nextLevel infixExpr
-        , ") { \n"
+        , ") ? "
         , prettyExpr nextLevel expr1
-        , "\n} else { \n "
+        , " : "
         , prettyExpr nextLevel expr2
-        , "\n }"
         ]
     While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
-    Object _ -> "Not supported Objects"
+
+    Object _ -> "Serial.print(\"Compiled in DEV mode.\");\nexit(EXIT_FAILURE)"
+
     Call expr1 exprs ->
       mconcat
         [prettyExpr nextLevel expr1, "(", fromExprBlock nextLevel exprs, ")"]
@@ -179,10 +193,9 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Function maybeName args stmts ->
       mconcat
         [ maybe mempty Name.toBuilder maybeName
-        , "( void* args[] ) {\n"
-        , indent
-        , "void* tmp0; \n"
-        , argsToBuilder args indent
+        , "(" 
+        , commaSep (map (\x -> "void* "<> Name.toBuilder x) args)
+        , ") {\n"
         , fromStmtBlock nextLevel stmts
         , "}\n"
         ]
@@ -200,6 +213,7 @@ argsToBuilder args indent =
           indent <>
           "void* " <> Name.toBuilder x <> " = args[" <> (B.int8Dec i) <> "]; \n")
        args)
+
 
 commaSep :: [Builder] -> Builder
 commaSep builders = mconcat (List.intersperse ", " builders)
