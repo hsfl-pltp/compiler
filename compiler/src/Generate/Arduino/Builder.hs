@@ -90,10 +90,9 @@ pretty level@(Level indent nextLevel) statement =
           , prettyDataType dataType
           , " "
           , Name.toBuilder name
-          , "()  {\n"
+          , " = "
           , prettyExpr nextLevel expr
           , ";\n"
-          , "};\n"
           ]
         CoreRef subname ->
           mconcat
@@ -110,9 +109,9 @@ pretty level@(Level indent nextLevel) statement =
             , prettyDataType dataType
             , " "
             , Name.toBuilder name
-            , "(){\n "
+            , " = "
             , prettyExpr nextLevel expr
-            , ";\n};\n"
+            , ";\n"
             ]
     Decl dataType name -> mconcat [prettyDataType dataType, " ", name]
     Const constExpr -> mconcat ["const ", prettyExpr nextLevel constExpr, ";\n"]
