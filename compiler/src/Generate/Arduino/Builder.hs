@@ -90,9 +90,10 @@ pretty level@(Level indent nextLevel) statement =
           , prettyDataType dataType
           , " "
           , Name.toBuilder name
-          , " = "
+          , "()  {\n"
           , prettyExpr nextLevel expr
           , ";\n"
+          , "};\n"
           ]
         CoreRef subname ->
           mconcat

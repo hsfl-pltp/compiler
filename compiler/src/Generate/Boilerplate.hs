@@ -26,7 +26,7 @@ void setup() {
     |] <> mode <> [r|
 |] <> ccode <> [r|
     //The Code here will only be executed once 
-|] <> mainNames <>  [r|()
+|] <> mainNames <>  [r|();
 }
 
 void loop() {
