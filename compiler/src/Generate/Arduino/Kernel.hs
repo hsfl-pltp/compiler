@@ -35,36 +35,36 @@ float _Basics_voidToFloat (void* pointer){
     return *((float *) pointer);
 }
 
-static void* _Basics_add(ElmFloat* n, ElmFloat* m) {
-    ElmFloat* pa = n;
-    ElmFloat* pb = m;
+static void* _Basics_add(void* n, void* m) {
+    ElmFloat* pa = (ElmFloat*)n;
+    ElmFloat* pb = (ElmFloat*)m;
     float ia = pa->value;
     float ib = pb->value;
     float i = ia + ib;
     return _Basics_newElmFloat(i);
 }
 
-static void* _Basics_mul(ElmFloat* n, ElmFloat* m) {
-    ElmFloat* pa = n;
-    ElmFloat* pb = m;
+static void* _Basics_mul(void* n, void* m) {
+    ElmFloat* pa = (ElmFloat*)n;
+    ElmFloat* pb = (ElmFloat*)m;
     float ia = pa->value;
     float ib = pb->value;
     float i = ia * ib;
     return _Basics_newElmFloat(i);
 }
 
-static void* _Basics_div(ElmFloat* n, ElmFloat* m) {
-    ElmFloat* pa = n;
-    ElmFloat* pb = m;
+static void* _Basics_div(void* n, void* m) {
+    ElmFloat* pa = (ElmFloat*)n;
+    ElmFloat* pb = (ElmFloat*)m;
     float ia = pa->value;
     float ib = pb->value;
     float i = ia / ib;
     return _Basics_newElmFloat(i);
 }
 
-static void* _Basics_sub(ElmFloat* n, ElmFloat* m) {
-    ElmFloat* pa = n;
-    ElmFloat* pb = m;
+static void* _Basics_sub(void* n, void* m) {
+    ElmFloat* pa = (ElmFloat*)n;
+    ElmFloat* pb = (ElmFloat*)m;
     float ia = pa->value;
     float ib = pb->value;
     float i = ia - ib;
@@ -76,7 +76,7 @@ static void* _Debug_log__Prod(String n, void* m) {
 }
 
 static void* _Debug_log(String n, void* m) {
-    ElmValue* v = m;
+    ElmValue* v = (ElmValue*)m;
     String output = n + " ";
 
     if(v->elm_float.tag == Tag_Float){
