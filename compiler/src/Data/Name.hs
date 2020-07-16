@@ -67,6 +67,9 @@ module Data.Name
   , identity
   , replModule
   , replValueToPrint
+  --
+  , output
+  , arduino
   ) where
 
 import           Control.Exception                (assert)
@@ -496,3 +499,13 @@ replModule = fromChars "Elm_Repl"
 {-# NOINLINE replValueToPrint #-}
 replValueToPrint :: Name
 replValueToPrint = fromChars "repl_input_value_"
+
+-- types for arduino programming
+
+{-# NOINLINE output #-}
+output :: Name
+output = fromChars "Output"
+
+{-# NOINLINE arduino #-}
+arduino :: Name
+arduino = fromChars "Arduino"

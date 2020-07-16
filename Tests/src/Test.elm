@@ -1,5 +1,7 @@
 module Test exposing (..)
 
+import Arduino exposing (Arduino, Output, arduino, digitalPin)
+
 
 test1 : Int
 test1 =
@@ -30,6 +32,20 @@ id i =
     i
 
 
+output : Int -> Output
+output n =
+    digitalPin (modBy n 2 == 0)
+
+
 main : Int
 main =
     test1 + test2 + test3 + test4
+
+
+
+-- main : Arduino Int
+-- main =
+--     arduino { init = test1 + test2 + test3 + test4, output = output }
+-- main : Output
+-- main =
+--     output 10
