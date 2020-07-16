@@ -6,30 +6,29 @@ module Generate.JavaScript
   , generateForReplEndpoint
   ) where
 
-import qualified Data.ByteString.Builder         as B
-import           Data.ByteString.Lazy.UTF8       (toString)
-import qualified Data.List                       as List
-import           Data.Map                        ((!))
-import qualified Data.Map                        as Map
-import           Data.Monoid                     ((<>))
-import qualified Data.Name                       as Name
-import qualified Data.Set                        as Set
-import qualified Data.Utf8                       as Utf8
-import           Debug.Trace                     as D
-import           Prelude                         hiding (cycle, print)
+import qualified Data.ByteString.Builder as B
+import Data.ByteString.Lazy.UTF8 (toString)
+import qualified Data.List as List
+import Data.Map ((!))
+import qualified Data.Map as Map
+import Data.Monoid ((<>))
+import qualified Data.Name as Name
+import qualified Data.Set as Set
+import qualified Data.Utf8 as Utf8
+import Prelude hiding (cycle, print)
 
-import qualified AST.Canonical                   as Can
-import qualified AST.Optimized                   as Opt
-import qualified Data.Index                      as Index
-import qualified Elm.Kernel                      as K
-import qualified Elm.ModuleName                  as ModuleName
-import qualified Generate.JavaScript.Builder     as JS
-import qualified Generate.JavaScript.Expression  as Expr
-import qualified Generate.JavaScript.Functions   as Functions
-import qualified Generate.JavaScript.Name        as JsName
-import qualified Generate.Mode                   as Mode
-import qualified Reporting.Doc                   as D
-import qualified Reporting.Render.Type           as RT
+import qualified AST.Canonical as Can
+import qualified AST.Optimized as Opt
+import qualified Data.Index as Index
+import qualified Elm.Kernel as K
+import qualified Elm.ModuleName as ModuleName
+import qualified Generate.JavaScript.Builder as JS
+import qualified Generate.JavaScript.Expression as Expr
+import qualified Generate.JavaScript.Functions as Functions
+import qualified Generate.JavaScript.Name as JsName
+import qualified Generate.Mode as Mode
+import qualified Reporting.Doc as D
+import qualified Reporting.Render.Type as RT
 import qualified Reporting.Render.Type.Localizer as L
 
 -- GENERATE
@@ -43,12 +42,7 @@ generate mode (Opt.GlobalGraph graph _) mains =
    in "(function(scope){\n'use strict';" <>
       Functions.functions <>
       perfNote mode <>
-      stateToBuilder state <>
-      D.trace
-        ("toMainExports: " ++
-         toString (B.toLazyByteString (toMainExports mode mains)))
-        (toMainExports mode mains) <>
-      "}(this));"
+      stateToBuilder state <> toMainExports mode mains <> "}(this));"
 
 addMain ::
      Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
@@ -166,7 +160,7 @@ postMessage localizer home maybeName tipe =
 -- GRAPH TRAVERSAL STATE
 data State =
   State
-    { _revKernels  :: [B.Builder]
+    { _revKernels :: [B.Builder]
     , _revBuilders :: [B.Builder]
     , _seenGlobals :: Set.Set Opt.Global
     }
@@ -212,8 +206,8 @@ addGlobalHelp mode graph global state =
           generateManager mode graph global effectsType state
         Opt.Kernel chunks deps ->
           if isDebugger global && not (Mode.isDebug mode)
-            then D.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) state --remove all except state
-            else D.trace ("Kernel Code: " ++ show (Opt.Kernel chunks deps)) addKernel (addDeps deps state) (generateKernel mode chunks)
+            then state --remove all except state
+            else addKernel (addDeps deps state) (generateKernel mode chunks)
             --this adds the Kernel Code which is already present
         Opt.Enum index -> addStmt state (generateEnum mode global index)
         Opt.Box ->
@@ -333,11 +327,11 @@ addChunk mode chunk builder =
     K.JsEnum int -> B.intDec int <> builder
     K.Debug ->
       case mode of
-        Mode.Dev _  -> builder
+        Mode.Dev _ -> builder
         Mode.Prod _ -> "_UNUSED" <> builder
     K.Prod ->
       case mode of
-        Mode.Dev _  -> "_UNUSED" <> builder
+        Mode.Dev _ -> "_UNUSED" <> builder
         Mode.Prod _ -> builder
 
 -- GENERATE ENUM
@@ -345,7 +339,7 @@ generateEnum :: Mode.Mode -> Opt.Global -> Index.ZeroBased -> JS.Stmt
 generateEnum mode global@(Opt.Global home name) index =
   JS.Var (JsName.fromGlobal home name) $
   case mode of
-    Mode.Dev _  -> Expr.codeToExpr (Expr.generateCtor mode global index 0)
+    Mode.Dev _ -> Expr.codeToExpr (Expr.generateCtor mode global index 0)
     Mode.Prod _ -> JS.Int (Index.toMachine index)
 
 -- GENERATE BOX
@@ -491,6 +485,6 @@ merge (Trie main1 subs1) (Trie main2 subs2) =
 checkedMerge :: Maybe a -> Maybe a -> Maybe a
 checkedMerge a b =
   case (a, b) of
-    (Nothing, main)  -> main
-    (main, Nothing)  -> main
+    (Nothing, main) -> main
+    (main, Nothing) -> main
     (Just _, Just _) -> error "cannot have two modules with the same name"

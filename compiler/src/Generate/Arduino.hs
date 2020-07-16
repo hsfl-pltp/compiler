@@ -12,7 +12,6 @@ import Data.Monoid ((<>))
 import qualified Data.Name as Name
 import qualified Data.Set as Set
 import qualified Data.Utf8 as Utf8
-import qualified Debug.Trace as T
 import Prelude hiding (cycle, print)
 
 import qualified AST.Canonical as Can
@@ -53,7 +52,6 @@ addMain ::
      Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
 addMain mode graph home _ state =
   addGlobal mode graph state (Opt.Global home "main")
- -- addGlobal mode (T.trace ("Trace dat graph" ++ show graph) graph) state (Opt.Global home "main")
 
 perfNote :: Mode.Mode -> B.Builder
 perfNote mode =
@@ -84,7 +82,7 @@ prependBuilders revBuilders monolith =
 -- ADD DEPENDENCIES
 addGlobal :: Mode.Mode -> Graph -> State -> Opt.Global -> State
 addGlobal mode graph state@(State revKernels builders seen) global =
-  if Set.member (T.trace ("Trace global" ++ show global) global) seen
+  if Set.member global seen
     then state
     else addGlobalHelp mode graph global $
          State revKernels builders (Set.insert global seen)
@@ -96,8 +94,7 @@ addGlobalHelp mode graph global state =
         Opt.Define expr deps ->
           addStmt (addDeps deps state) (var global (Expr.generate expr))
     -- For testing purposes we ignore the kernel code
-        Opt.Kernel chunks deps -- T.trace (show (Opt.Kernel chunks deps)) state
-         -> state
+        Opt.Kernel chunks dep -> state
         Opt.Enum index -> addStmt state (generateEnum mode global index)
         expr -> error ("unsupported argument: " ++ show expr)
 
