@@ -92,6 +92,12 @@ static void* _Basics_modBy(void* modulus, void* x) {
     return _Basics_newElmFloat(i);
 }
 
+// EQUALITY
+static void* _Utils_equal(void* x, void* y) {
+ return reinterpret_cast<void *> (static_cast<int> (x==y)); 
+}
+
+
 static void* _Debug_log__Prod(String n, void* m) {
     return m;
 }
