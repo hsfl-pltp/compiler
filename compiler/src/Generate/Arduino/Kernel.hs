@@ -71,6 +71,27 @@ static void* _Basics_sub(void* n, void* m) {
     return _Basics_newElmFloat(i);
 }
 
+static void* _Basics_modBy(void* modulus, void* x) {
+    ElmFloat* pa = (ElmFloat*)modulus;
+    ElmFloat* pb = (ElmFloat*)x;
+    int ia = pa->value;
+    int ib = pb->value;
+    int i = ib % ia;
+    if(ia == 0){
+      exit(EXIT_FAILURE);
+    }
+    else {
+      if(i > 0 && ia < 0 || i < 0 && ia > 0){
+        i = ia + i;
+        return _Basics_newElmFloat(i);
+      }
+      else {
+        return _Basics_newElmFloat(i);
+      }
+    }
+    return _Basics_newElmFloat(i);
+}
+
 static void* _Debug_log__Prod(String n, void* m) {
     return m;
 }

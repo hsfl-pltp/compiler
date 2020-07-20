@@ -96,6 +96,10 @@ addGlobalHelp mode graph global state =
     -- For testing purposes we ignore the kernel code
         Opt.Kernel chunks dep -> state
         Opt.Enum index -> addStmt state (generateEnum mode global index)
+        Opt.Box ->
+          addStmt
+            (addGlobal mode graph state identity)
+            (generateBox mode global)
         expr -> error ("unsupported argument: " ++ show expr)
 
 addStmt :: State -> Arduino.Stmt -> State
@@ -108,6 +112,10 @@ addBuilder (State revKernels revBuilders seen) builder =
 addKernel :: State -> B.Builder -> State
 addKernel (State revKernels revBuilders seen) kernel =
   State (kernel : revKernels) revBuilders seen
+
+{-# NOINLINE identity #-}
+identity :: Opt.Global
+identity = Opt.Global ModuleName.basics Name.identity
 
 var :: Opt.Global -> Expr.Code -> Arduino.Stmt
 var (Opt.Global home name) code =
@@ -203,3 +211,11 @@ checkedMerge a b =
     (Nothing, main) -> main
     (main, Nothing) -> main
     (Just _, Just _) -> error "cannot have two modules with the same name"
+
+-- GENERATE BOX
+generateBox :: Mode.Mode -> Opt.Global -> Arduino.Stmt
+generateBox mode global@(Opt.Global home name) =
+  Arduino.Var "any" (ArduinoName.fromGlobal home name) $
+  case mode of
+    Mode.Dev _ -> Expr.codeToExpr (Expr.generateCtor mode global Index.first 1)
+    Mode.Prod _ -> Arduino.Ref (ArduinoName.fromGlobal ModuleName.basics Name.identity)
