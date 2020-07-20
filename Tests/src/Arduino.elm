@@ -10,10 +10,10 @@ digitalPin b =
     Output b
 
 
-type alias Arduino a =
-    { init : a, output : a -> Output }
+type Arduino a
+    = Arduino { init : a, output : a -> Output }
 
 
 arduino : { init : a, output : a -> Output } -> Arduino a
 arduino arg =
-    arg
+    Arduino arg
