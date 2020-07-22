@@ -12,6 +12,7 @@ kernel =
   [r|
 typedef enum {
     Tag_Float,            // 0
+    Tag_Bool,             // 1
 } Tag;
 
 typedef struct {
@@ -23,6 +24,17 @@ typedef union {
     ElmFloat elm_float;
 } ElmValue;
 
+typedef struct {
+  bool value;
+  Tag tag;
+} ElmBool;
+
+ElmBool* _Basics_newElmBool(bool value) {
+  ElmBool* p =(ElmBool*)malloc(sizeof(ElmFloat));
+  p->value = value;
+  p->tag = Tag_Bool;
+  return p;
+}
 
 ElmFloat* _Basics_newElmFloat(float value) {
     ElmFloat* p = (ElmFloat*)malloc(sizeof(ElmFloat));
@@ -108,7 +120,13 @@ static void* _Debug_log(String n, void* m) {
 
     if(v->elm_float.tag == Tag_Float){
         output = output + _Basics_voidToFloat(m);
-    } else {
+    } else if (v-> elm_bool.tag == Tag_Bool) {
+        if(v-> elm_bool.value){
+            output = output + "True";
+        } else {
+            output = output + "false";
+        }
+    }
         output = "No valid type";
     }
 
@@ -116,4 +134,5 @@ static void* _Debug_log(String n, void* m) {
     Serial.println(output);
     return m;
 }
+
 |]

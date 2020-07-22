@@ -158,10 +158,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     String string -> mconcat ["\"", string, "\""]
     Null -> "null"
     Ref name -> Name.toBuilder name
-    Bool bool ->
-      if bool
-        then "true"
-        else "false"
+    Bool bool -> "_Basics_newElmBool(" <> if(bool) then "true" else "false" <> ")"
     Int n -> B.intDec n
     Double double ->"_Basics_newElmFloat("<> double <>")"
     If infixExpr expr1 expr2 ->
