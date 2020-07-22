@@ -71,7 +71,7 @@ stmtToBuilder stmts = pretty levelZero stmts
 pretty :: Level -> Stmt -> Builder
 pretty level@(Level indent nextLevel) statement =
   case statement of
-    Block array -> mconcat (map (pretty nextLevel) array)
+    Block array -> mconcat (map (pretty level) array)
     EmptyStmt -> error "Not supported EmptyStmt"
     PlaceholderStmt -> ""
     Var dataType name expr ->
@@ -82,7 +82,7 @@ pretty level@(Level indent nextLevel) statement =
             , prettyDataType dataType
             , " "
             , Name.toBuilder name
-            , prettyExpr nextLevel expr
+            , prettyExpr level expr
             ]
         If _ _ _ ->
           mconcat
@@ -101,7 +101,7 @@ pretty level@(Level indent nextLevel) statement =
             , Name.toBuilder name
             , " "
             , Name.toBuilder subname
-            , "\n"
+            , "\n \n"
             ]
         _ ->
           mconcat
@@ -111,9 +111,9 @@ pretty level@(Level indent nextLevel) statement =
             , Name.toBuilder name
             , " = "
             , prettyExpr nextLevel expr
-            , ";\n"
+            , ";\n \n"
             ]
-    Decl dataType name -> mconcat [prettyDataType dataType, " ", name]
+    Decl dataType name -> mconcat ["\n", prettyDataType dataType, " ", name]
     Const constExpr -> mconcat ["const ", prettyExpr nextLevel constExpr, ";\n"]
     Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
     IfStmt condition thenStmt elseStmt ->
@@ -166,7 +166,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Double double ->"_Basics_newElmFloat("<> double <>")"
     If infixExpr expr1 expr2 ->
       mconcat
-        [ "    ("
+        [ "("
         , prettyExpr nextLevel infixExpr
         , ") ? "
         , prettyExpr nextLevel expr1
@@ -197,7 +197,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
         , commaSep (map (\x -> "void* "<> Name.toBuilder x) args)
         , ") {\n"
         , fromStmtBlock nextLevel stmts
-        , "}\n"
+        , "}\n \n"
         ]
     Enum name exprs ->
       mconcat ["enum ", Name.toBuilder name, prettyExpr nextLevel exprs, "\n"]
