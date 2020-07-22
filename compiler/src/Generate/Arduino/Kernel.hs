@@ -20,14 +20,16 @@ typedef struct {
     Tag tag;
 } ElmFloat;
 
-typedef union {
-    ElmFloat elm_float;
-} ElmValue;
-
 typedef struct {
   bool value;
   Tag tag;
 } ElmBool;
+
+typedef union {
+    ElmFloat elm_float;
+    ElmBool elm_bool;
+} ElmValue;
+
 
 ElmBool* _Basics_newElmBool(bool value) {
   ElmBool* p =(ElmBool*)malloc(sizeof(ElmFloat));
@@ -120,13 +122,13 @@ static void* _Debug_log(String n, void* m) {
 
     if(v->elm_float.tag == Tag_Float){
         output = output + _Basics_voidToFloat(m);
-    } else if (v-> elm_bool.tag == Tag_Bool) {
-        if(v-> elm_bool.value){
+    } else if (v->elm_bool.tag == Tag_Bool) {
+        if(v->elm_bool.value){
             output = output + "True";
         } else {
             output = output + "false";
         }
-    }
+    } else {
         output = "No valid type";
     }
 
