@@ -21,8 +21,8 @@ typedef struct {
 } ElmFloat;
 
 typedef struct {
-  bool value;
-  Tag tag;
+    bool value;
+    Tag tag;
 } ElmBool;
 
 typedef union {
@@ -32,10 +32,10 @@ typedef union {
 
 
 ElmBool* _Basics_newElmBool(bool value) {
-  ElmBool* p =(ElmBool*)malloc(sizeof(ElmFloat));
-  p->value = value;
-  p->tag = Tag_Bool;
-  return p;
+    ElmBool* p = (ElmBool*)malloc(sizeof(ElmFloat));
+    p->value = value;
+    p->tag = Tag_Bool;
+    return p;
 }
 
 ElmFloat* _Basics_newElmFloat(float value) {
@@ -45,7 +45,7 @@ ElmFloat* _Basics_newElmFloat(float value) {
     return p;
 }
 
-float _Basics_voidToFloat (void* pointer){
+float _Basics_voidToFloat (void* pointer) {
     return *((float *) pointer);
 }
 
@@ -91,24 +91,22 @@ static void* _Basics_modBy(void* modulus, void* x) {
     int ia = pa->value;
     int ib = pb->value;
     int i = ib % ia;
-    if(ia == 0){
-      exit(EXIT_FAILURE);
-    }
-    else {
-      if(i > 0 && ia < 0 || i < 0 && ia > 0){
-        i = ia + i;
-        return _Basics_newElmFloat(i);
-      }
-      else {
-        return _Basics_newElmFloat(i);
-      }
+    if(ia == 0) {
+        exit(EXIT_FAILURE);
+    } else {
+        if(i > 0 && ia < 0 || i < 0 && ia > 0) {
+            i = ia + i;
+            return _Basics_newElmFloat(i);
+        } else {
+            return _Basics_newElmFloat(i);
+        } 
     }
     return _Basics_newElmFloat(i);
 }
 
 // EQUALITY
 static void* _Utils_equal(void* x, void* y) {
- return reinterpret_cast<void *> (static_cast<int> (x==y)); 
+    return reinterpret_cast<void *> (static_cast<int> (x==y)); 
 }
 
 
