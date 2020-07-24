@@ -279,18 +279,20 @@ data Level =
   Level Builder Level
 
 levelZero :: Level
-levelZero = Level mempty (makeLevel 1 (BS.replicate 16 0x09)) {-\t-}
+levelZero = Level mempty (makeLevel 1 (BS.replicate 16 0x20)) {-\t-}
 
 levelAny :: Int -> Level
 levelAny n =
   Level
-    (B.byteString (BS.replicate n 0x09))
-    (makeLevel (n + 1) (BS.replicate 16 0x09)) {-\t-}
+    (B.byteString (BS.replicate n 0x20))
+    (makeLevel (n + 1) (BS.replicate 8 0x20)) {-\t-}
 
 makeLevel :: Int -> BS.ByteString -> Level
 makeLevel level oldTabs =
   let tabs =
-        if level <= BS.length oldTabs
+        if level <= (BS.length oldTabs)
           then oldTabs
-          else BS.replicate (BS.length oldTabs * 2) 0x09 {-\t-}
-   in Level (B.byteString (BS.take level tabs)) (makeLevel (level + 1) tabs)
+          else BS.replicate (BS.length oldTabs * 2) 0x20 {-\t-}
+   in Level
+        (B.byteString (BS.take (level * 4) tabs))
+        (makeLevel (level + 1) tabs)
