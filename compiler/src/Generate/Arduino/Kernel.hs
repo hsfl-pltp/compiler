@@ -31,25 +31,29 @@ typedef union {
 } ElmValue;
 
 
-ElmBool* _Basics_newElmBool(bool value) {
-    ElmBool* p = (ElmBool*)malloc(sizeof(ElmFloat));
+ElmValue* _Basics_newElmBool(bool value) {
+    ElmBool* p = (ElmBool*)malloc(sizeof(ElmBool));
     p->value = value;
     p->tag = Tag_Bool;
-    return p;
+    return (ElmValue*)p;
 }
 
-ElmFloat* _Basics_newElmFloat(float value) {
+ElmValue* _Basics_newElmFloat(float value) {
     ElmFloat* p = (ElmFloat*)malloc(sizeof(ElmFloat));
     p->value = value;
     p->tag = Tag_Float;
-    return p;
+    return (ElmValue*)p;
 }
 
-float _Basics_voidToFloat (void* pointer) {
+float _Basics_ElmValueToFloat (ElmValue* pointer) {
     return *((float *) pointer);
 }
 
-static void* _Basics_add(void* n, void* m) {
+bool _Basics_ElmValueToBool (ElmValue* pointer) {
+    return *((bool *) pointer);
+}
+
+static ElmValue* _Basics_add(ElmValue* n, ElmValue* m) {
     ElmFloat* pa = (ElmFloat*)n;
     ElmFloat* pb = (ElmFloat*)m;
     float ia = pa->value;
@@ -58,7 +62,7 @@ static void* _Basics_add(void* n, void* m) {
     return _Basics_newElmFloat(i);
 }
 
-static void* _Basics_mul(void* n, void* m) {
+static ElmValue* _Basics_mul(ElmValue* n, ElmValue* m) {
     ElmFloat* pa = (ElmFloat*)n;
     ElmFloat* pb = (ElmFloat*)m;
     float ia = pa->value;
@@ -67,7 +71,7 @@ static void* _Basics_mul(void* n, void* m) {
     return _Basics_newElmFloat(i);
 }
 
-static void* _Basics_div(void* n, void* m) {
+static ElmValue* _Basics_div(ElmValue* n, ElmValue* m) {
     ElmFloat* pa = (ElmFloat*)n;
     ElmFloat* pb = (ElmFloat*)m;
     float ia = pa->value;
@@ -76,7 +80,7 @@ static void* _Basics_div(void* n, void* m) {
     return _Basics_newElmFloat(i);
 }
 
-static void* _Basics_sub(void* n, void* m) {
+static ElmValue* _Basics_sub(ElmValue* n, ElmValue* m) {
     ElmFloat* pa = (ElmFloat*)n;
     ElmFloat* pb = (ElmFloat*)m;
     float ia = pa->value;
@@ -85,7 +89,7 @@ static void* _Basics_sub(void* n, void* m) {
     return _Basics_newElmFloat(i);
 }
 
-static void* _Basics_modBy(void* modulus, void* x) {
+static ElmValue* _Basics_modBy(ElmValue* modulus, ElmValue* x) {
     ElmFloat* pa = (ElmFloat*)modulus;
     ElmFloat* pb = (ElmFloat*)x;
     int ia = pa->value;
@@ -105,26 +109,25 @@ static void* _Basics_modBy(void* modulus, void* x) {
 }
 
 // EQUALITY
-static void* _Utils_equal(void* x, void* y) {
-    return reinterpret_cast<void *> (static_cast<int> (x==y)); 
+static ElmValue* _Utils_equal(ElmValue* x, ElmValue* y) {
+    return reinterpret_cast<ElmValue *> (static_cast<int> (x==y)); 
 }
 
 
-static void* _Debug_log__Prod(String n, void* m) {
-    return m;
+static ElmValue* _Debug_log__Prod(String n, ElmValue* v) {
+    return v;
 }
 
-static void* _Debug_log(String n, void* m) {
-    ElmValue* v = (ElmValue*)m;
+static ElmValue* _Debug_log(String n, ElmValue* v) {
     String output = n + " ";
 
     if(v->elm_float.tag == Tag_Float){
-        output = output + _Basics_voidToFloat(m);
+        output = output + _Basics_ElmValueToFloat(v);
     } else if (v->elm_bool.tag == Tag_Bool) {
         if(v->elm_bool.value){
             output = output + "True";
         } else {
-            output = output + "false";
+            output = output + "False";
         }
     } else {
         output = "No valid type";
@@ -132,7 +135,7 @@ static void* _Debug_log(String n, void* m) {
 
     Serial.begin(9600);
     Serial.println(output);
-    return m;
+    return v;
 }
 
 |]

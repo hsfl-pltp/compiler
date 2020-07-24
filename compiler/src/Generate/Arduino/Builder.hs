@@ -62,7 +62,7 @@ prettyDataType dataType =
     "Void" -> "void"
     "Enum" -> "enum"
     -- Dummy case used because type information is missing
-    "any" -> "void*"
+    "any" -> "ElmValue*"
 
 stmtToBuilder :: Stmt -> Builder
 stmtToBuilder stmts = pretty levelZero stmts
@@ -158,7 +158,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     String string -> mconcat ["\"", string, "\""]
     Null -> "null"
     Ref name -> Name.toBuilder name
-    Bool bool -> "_Basics_newElmBool(" <> if(bool) then "true" else "false" <> ")"
+    Bool bool -> "_Basics_newElmBool(" <> if(bool) then "true" <>")" else "false" <> ")"
     Int n -> B.intDec n
     Double double ->"_Basics_newElmFloat("<> double <>")"
     If infixExpr expr1 expr2 ->
@@ -191,7 +191,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
       mconcat
         [ maybe mempty Name.toBuilder maybeName
         , "(" 
-        , commaSep (map (\x -> "void* "<> Name.toBuilder x) args)
+        , commaSep (map (\x -> "ElmValue* "<> Name.toBuilder x) args)
         , ") {\n"
         , fromStmtBlock nextLevel stmts
         , "}\n \n"
