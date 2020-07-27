@@ -8,5 +8,7 @@ cabal-dev
 cabal.sandbox.config
 .DS_Store
 .stack-work/
+Tests/elm.json
+Tests/elm.exe
 *.yaml
 *~
