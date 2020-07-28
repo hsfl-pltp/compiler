@@ -62,7 +62,7 @@ prettyDataType dataType =
     "Void" -> "void"
     "Enum" -> "enum"
     -- Dummy case used because type information is missing
-    "any" -> "ElmValue*"
+    "any" -> "arx::shared_ptr<ElmValue>"
 
 stmtToBuilder :: Stmt -> Builder
 stmtToBuilder stmts = pretty levelZero stmts
@@ -191,7 +191,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
       mconcat
         [ maybe mempty Name.toBuilder maybeName
         , "(" 
-        , commaSep (map (\x -> "ElmValue* "<> Name.toBuilder x) args)
+        , commaSep (map (\x -> "arx::shared_ptr<ElmValue> "<> Name.toBuilder x) args)
         , ") {\n"
         , fromStmtBlock nextLevel stmts
         , "}\n \n"

@@ -10,6 +10,8 @@ import Text.RawString.QQ (r)
 kernel :: B.Builder
 kernel =
   [r|
+#include <ArxSmartPtr.h>
+
 typedef enum {
     Tag_Float,            // 0
     Tag_Bool,             // 1
@@ -25,75 +27,64 @@ typedef struct {
     Tag tag;
 } ElmBool;
 
-typedef union {
-    ElmFloat elm_float;
-    ElmBool elm_bool;
+typedef struct ElmValue
+{
+  float value;
+  bool b;
+  Tag tag;
+
+  ElmValue(float value) : value(value), tag(Tag_Float)//Constructor
+  {
+    Serial.print("Cons Float");
+  }
+  ElmValue(bool b) : b(b), tag(Tag_Bool)//Constructor
+  {
+    Serial.print("Cons Bool");
+  }
+  ~ElmValue()//Destructor
+  {
+    Serial.print("Des");
+  }
 } ElmValue;
 
 
-ElmValue* _Basics_newElmBool(bool value) {
-    ElmBool* p = (ElmBool*)malloc(sizeof(ElmBool));
-    p->value = value;
-    p->tag = Tag_Bool;
-    return (ElmValue*)p;
+arx::shared_ptr<ElmValue> _Basics_newElmBool(bool value) {
+    arx::shared_ptr<ElmValue> p {new ElmValue(value)};
+    return p;
 }
 
-ElmValue* _Basics_newElmFloat(float value) {
-    ElmFloat* p = (ElmFloat*)malloc(sizeof(ElmFloat));
-    p->value = value;
-    p->tag = Tag_Float;
-    return (ElmValue*)p;
+arx::shared_ptr<ElmValue> _Basics_newElmFloat(float value) {
+    arx::shared_ptr<ElmValue> p {new ElmValue(value)};
+    return p;
 }
 
-float _Basics_ElmValueToFloat (ElmValue* pointer) {
-    return *((float *) pointer);
+float _Basics_ElmValueToFloat (arx::shared_ptr<ElmValue> pointer) {
+    return pointer->value;
 }
 
-bool _Basics_ElmValueToBool (ElmValue* pointer) {
-    return *((bool *) pointer);
+bool _Basics_ElmValueToBool (arx::shared_ptr<ElmValue> pointer) {
+    return pointer->b;
 }
 
-static ElmValue* _Basics_add(ElmValue* n, ElmValue* m) {
-    ElmFloat* pa = (ElmFloat*)n;
-    ElmFloat* pb = (ElmFloat*)m;
-    float ia = pa->value;
-    float ib = pb->value;
-    float i = ia + ib;
-    return _Basics_newElmFloat(i);
+static arx::shared_ptr<ElmValue> _Basics_add(arx::shared_ptr<ElmValue> n, arx::shared_ptr<ElmValue> m) {
+    return _Basics_newElmFloat(n->value + m->value);
 }
 
-static ElmValue* _Basics_mul(ElmValue* n, ElmValue* m) {
-    ElmFloat* pa = (ElmFloat*)n;
-    ElmFloat* pb = (ElmFloat*)m;
-    float ia = pa->value;
-    float ib = pb->value;
-    float i = ia * ib;
-    return _Basics_newElmFloat(i);
+static arx::shared_ptr<ElmValue> _Basics_mul(arx::shared_ptr<ElmValue> n, arx::shared_ptr<ElmValue> m) {
+    return _Basics_newElmFloat(n->value * m->value);
 }
 
-static ElmValue* _Basics_div(ElmValue* n, ElmValue* m) {
-    ElmFloat* pa = (ElmFloat*)n;
-    ElmFloat* pb = (ElmFloat*)m;
-    float ia = pa->value;
-    float ib = pb->value;
-    float i = ia / ib;
-    return _Basics_newElmFloat(i);
+static arx::shared_ptr<ElmValue> _Basics_div(arx::shared_ptr<ElmValue> n, arx::shared_ptr<ElmValue> m) {
+    return _Basics_newElmFloat(n->value / m->value);
 }
 
-static ElmValue* _Basics_sub(ElmValue* n, ElmValue* m) {
-    ElmFloat* pa = (ElmFloat*)n;
-    ElmFloat* pb = (ElmFloat*)m;
-    float ia = pa->value;
-    float ib = pb->value;
-    float i = ia - ib;
-    return _Basics_newElmFloat(i);
+static arx::shared_ptr<ElmValue> _Basics_sub(arx::shared_ptr<ElmValue> n, arx::shared_ptr<ElmValue> m) {
+    return _Basics_newElmFloat(n->value - m->value);
 }
 
-static ElmValue* _Basics_modBy(ElmValue* modulus, ElmValue* x) {
-    ElmFloat* pa = (ElmFloat*)modulus;
-    ElmFloat* pb = (ElmFloat*)x;
-    int ia = pa->value;
-    int ib = pb->value;
+static arx::shared_ptr<ElmValue> _Basics_modBy(arx::shared_ptr<ElmValue> modulus, arx::shared_ptr<ElmValue> x) {
+    int ia = modulus->value;
+    int ib = x->value;
     int i = ib % ia;
     if(ia == 0) {
         exit(EXIT_FAILURE);
@@ -114,17 +105,17 @@ static ElmValue* _Utils_equal(ElmValue* x, ElmValue* y) {
 }
 
 
-static ElmValue* _Debug_log__Prod(String n, ElmValue* v) {
+static arx::shared_ptr<ElmValue> _Debug_log__Prod(String n, arx::shared_ptr<ElmValue> v) {
     return v;
 }
 
-static ElmValue* _Debug_log(String n, ElmValue* v) {
+static arx::shared_ptr<ElmValue> _Debug_log(String n, arx::shared_ptr<ElmValue> v) {
     String output = n + " ";
 
-    if(v->elm_float.tag == Tag_Float){
+    if(v->tag == Tag_Float){
         output = output + _Basics_ElmValueToFloat(v);
-    } else if (v->elm_bool.tag == Tag_Bool) {
-        if(v->elm_bool.value){
+    } else if (v->tag == Tag_Bool) {
+        if(v->value){
             output = output + "True";
         } else {
             output = output + "False";
