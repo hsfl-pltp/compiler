@@ -1,57 +1,57 @@
-{-# LANGUAGE BangPatterns      #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE UnboxedTuples     #-}
+{-# LANGUAGE UnboxedTuples #-}
 
 module Elm.ModuleName
-  ( Raw
-  , toChars
-  , toFilePath
-  , toHyphenPath
-  --
-  , encode
-  , decoder
-  --
-  , Canonical(..)
-  , basics
-  , char
-  , string
-  , maybe
-  , result
-  , list
-  , array
-  , dict
-  , tuple
-  , platform
-  , cmd
-  , sub
-  , debug
-  , bitwise
-  , virtualDom
-  , jsonDecode
-  , jsonEncode
-  , webgl
-  , texture
-  , vector2
-  , vector3
-  , vector4
-  , matrix4
-  ) where
+  ( Raw,
+    toChars,
+    toFilePath,
+    toHyphenPath,
+    --
+    encode,
+    decoder,
+    --
+    Canonical (..),
+    basics,
+    char,
+    string,
+    maybe,
+    result,
+    list,
+    array,
+    dict,
+    tuple,
+    platform,
+    cmd,
+    sub,
+    debug,
+    bitwise,
+    virtualDom,
+    jsonDecode,
+    jsonEncode,
+    webgl,
+    texture,
+    vector2,
+    vector3,
+    vector4,
+    matrix4,
+  )
+where
 
-import           Control.Monad    (liftM2)
-import           Data.Binary      (Binary (..))
-import qualified Data.Name        as Name
-import qualified Data.Utf8        as Utf8
-import           Data.Word        (Word8)
-import           Foreign.Ptr      (Ptr, minusPtr, plusPtr)
-import           Prelude          hiding (maybe)
-import qualified System.FilePath  as FP
-
-import qualified Elm.Package      as Pkg
-import qualified Json.Decode      as D
-import qualified Json.Encode      as E
-import           Parse.Primitives (Col, Row)
+import Control.Monad (liftM2)
+import Data.Binary (Binary (..))
+import qualified Data.Name as Name
+import qualified Data.Utf8 as Utf8
+import Data.Word (Word8)
+import qualified Elm.Package as Pkg
+import Foreign.Ptr (Ptr, minusPtr, plusPtr)
+import qualified Json.Decode as D
+import qualified Json.Encode as E
+import Parse.Primitives (Col, Row)
 import qualified Parse.Primitives as P
-import qualified Parse.Variable   as Var
+import qualified Parse.Variable as Var
+import qualified System.FilePath as FP
+import Prelude hiding (maybe)
 
 -- RAW
 type Raw = Name.Name
@@ -62,19 +62,21 @@ toChars = Name.toChars
 toFilePath :: Raw -> FilePath
 toFilePath name =
   map
-    (\c ->
-       if c == '.'
-         then FP.pathSeparator
-         else c)
+    ( \c ->
+        if c == '.'
+          then FP.pathSeparator
+          else c
+    )
     (Name.toChars name)
 
 toHyphenPath :: Raw -> FilePath
 toHyphenPath name =
   map
-    (\c ->
-       if c == '.'
-         then '-'
-         else c)
+    ( \c ->
+        if c == '.'
+          then '-'
+          else c
+    )
     (Name.toChars name)
 
 -- JSON
@@ -90,11 +92,13 @@ parser =
   P.Parser $ \(P.State src pos end indent row col) cok _ cerr eerr ->
     let (# isGood, newPos, newCol #) = chompStart pos end col
      in if isGood && minusPtr newPos pos < 256
-          then let !newState = P.State src newPos end indent row newCol
-                in cok (Utf8.fromPtr pos newPos) newState
-          else if col == newCol
-                 then eerr row newCol (,)
-                 else cerr row newCol (,)
+          then
+            let !newState = P.State src newPos end indent row newCol
+             in cok (Utf8.fromPtr pos newPos) newState
+          else
+            if col == newCol
+              then eerr row newCol (,)
+              else cerr row newCol (,)
 
 chompStart :: Ptr Word8 -> Ptr Word8 -> Col -> (# Bool, Ptr Word8, Col #)
 chompStart pos end col =
@@ -107,20 +111,21 @@ chompInner :: Ptr Word8 -> Ptr Word8 -> Col -> (# Bool, Ptr Word8, Col #)
 chompInner pos end col =
   if pos >= end
     then (# True, pos, col #)
-    else let !word = P.unsafeIndex pos
-             !width = Var.getInnerWidthHelp pos end word
-          in if width == 0
-               then if word == 0x2E {-.-}
-                      then chompStart (plusPtr pos 1) end (col + 1)
-                      else (# True, pos, col #)
-               else chompInner (plusPtr pos width) end (col + 1)
+    else
+      let !word = P.unsafeIndex pos
+          !width = Var.getInnerWidthHelp pos end word
+       in if width == 0
+            then
+              if word == 0x2E {-.-}
+                then chompStart (plusPtr pos 1) end (col + 1)
+                else (# True, pos, col #)
+            else chompInner (plusPtr pos width) end (col + 1)
 
 -- CANONICAL
-data Canonical =
-  Canonical
-    { _package :: !Pkg.Name
-    , _module  :: !Name.Name
-    }
+data Canonical = Canonical
+  { _package :: !Pkg.Name,
+    _module :: !Name.Name
+  }
   deriving (Show)
 
 -- INSTANCES

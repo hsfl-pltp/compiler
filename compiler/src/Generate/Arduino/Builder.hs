@@ -62,7 +62,7 @@ prettyDataType dataType =
     "Void" -> "void"
     "Enum" -> "enum"
     -- Dummy case used because type information is missing
-    "any" -> "void*"
+    "any" -> "ElmValue*"
 
 stmtToBuilder :: Stmt -> Builder
 stmtToBuilder stmts = pretty levelZero stmts
@@ -71,7 +71,7 @@ stmtToBuilder stmts = pretty levelZero stmts
 pretty :: Level -> Stmt -> Builder
 pretty level@(Level indent nextLevel) statement =
   case statement of
-    Block array -> mconcat (map (pretty nextLevel) array)
+    Block array -> mconcat (map (pretty level) array)
     EmptyStmt -> error "Not supported EmptyStmt"
     PlaceholderStmt -> ""
     Var dataType name expr ->
@@ -82,7 +82,7 @@ pretty level@(Level indent nextLevel) statement =
             , prettyDataType dataType
             , " "
             , Name.toBuilder name
-            , prettyExpr nextLevel expr
+            , prettyExpr level expr
             ]
         If _ _ _ ->
           mconcat
@@ -101,7 +101,7 @@ pretty level@(Level indent nextLevel) statement =
             , Name.toBuilder name
             , " "
             , Name.toBuilder subname
-            , "\n"
+            , "\n \n"
             ]
         _ ->
           mconcat
@@ -111,14 +111,14 @@ pretty level@(Level indent nextLevel) statement =
             , Name.toBuilder name
             , " = "
             , prettyExpr nextLevel expr
-            , ";\n"
+            , ";\n \n"
             ]
-    Decl dataType name -> mconcat [prettyDataType dataType, " ", name]
+    Decl dataType name -> mconcat ["\n", prettyDataType dataType, " ", name]
     Const constExpr -> mconcat ["const ", prettyExpr nextLevel constExpr, ";\n"]
     Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
     IfStmt condition thenStmt elseStmt ->
       mconcat
-        [ "("
+        [ " ("
         , prettyExpr nextLevel condition
         , ") ? "
         , pretty nextLevel thenStmt
@@ -158,10 +158,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     String string -> mconcat ["\"", string, "\""]
     Null -> "null"
     Ref name -> Name.toBuilder name
-    Bool bool ->
-      if bool
-        then "true"
-        else "false"
+    Bool bool -> "_Basics_newElmBool(" <> if(bool) then "true" <>")" else "false" <> ")"
     Int n -> B.intDec n
     Double double ->"_Basics_newElmFloat("<> double <>")"
     If infixExpr expr1 expr2 ->
@@ -177,7 +174,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
 
-    Object _ -> "Serial.print(\"Compiled in DEV mode.\");\nexit(EXIT_FAILURE)"
+    Object _ -> "Serial.print(\"Object is not supported yet\");\n    exit(EXIT_FAILURE)"
 
     Call expr1 exprs ->
       mconcat
@@ -194,10 +191,10 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
       mconcat
         [ maybe mempty Name.toBuilder maybeName
         , "(" 
-        , commaSep (map (\x -> "void* "<> Name.toBuilder x) args)
+        , commaSep (map (\x -> "ElmValue* "<> Name.toBuilder x) args)
         , ") {\n"
         , fromStmtBlock nextLevel stmts
-        , "}\n"
+        , "}\n \n"
         ]
     Enum name exprs ->
       mconcat ["enum ", Name.toBuilder name, prettyExpr nextLevel exprs, "\n"]
@@ -282,18 +279,20 @@ data Level =
   Level Builder Level
 
 levelZero :: Level
-levelZero = Level mempty (makeLevel 1 (BS.replicate 16 0x09)) {-\t-}
+levelZero = Level mempty (makeLevel 1 (BS.replicate 16 0x20)) {-\t-}
 
 levelAny :: Int -> Level
 levelAny n =
   Level
-    (B.byteString (BS.replicate n 0x09))
-    (makeLevel (n + 1) (BS.replicate 16 0x09)) {-\t-}
+    (B.byteString (BS.replicate n 0x20))
+    (makeLevel (n + 1) (BS.replicate 8 0x20)) {-\t-}
 
 makeLevel :: Int -> BS.ByteString -> Level
 makeLevel level oldTabs =
   let tabs =
-        if level <= BS.length oldTabs
+        if level <= (BS.length oldTabs)
           then oldTabs
-          else BS.replicate (BS.length oldTabs * 2) 0x09 {-\t-}
-   in Level (B.byteString (BS.take level tabs)) (makeLevel (level + 1) tabs)
+          else BS.replicate (BS.length oldTabs * 2) 0x20 {-\t-}
+   in Level
+        (B.byteString (BS.take (level * 4) tabs))
+        (makeLevel (level + 1) tabs)

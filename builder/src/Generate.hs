@@ -40,7 +40,6 @@ import qualified Nitpick.Debug as Nitpick
 import qualified Reporting.Exit as Exit
 import qualified Reporting.Task as Task
 import qualified Stuff
-import qualified Debug.Trace as T
 
 -- NOTE: This is used by Make, Repl, and Reactor right now. But it may be
 -- desireable to have Repl and Reactor to keep foreign objects in memory
@@ -171,8 +170,8 @@ finalizeObjects (LoadingObjects mvar mvars) =
       Just loaded -> return (Right loaded)
       Nothing -> return (Left Exit.GenerateCannotLoadArtifacts)
 
---the objects will be loaded in any case (loadObjects function) but the 
---kernel code shouldnt be added to the graph 
+--the objects will be loaded in any case (loadObjects function) but the
+--kernel code shouldnt be added to the graph
 objectsToGlobalGraph :: Objects -> Opt.GlobalGraph
 objectsToGlobalGraph (Objects globals locals) =
   foldr Opt.addLocalGraph globals locals
@@ -193,8 +192,6 @@ loadTypes root ifaces modules =
     case sequence results of
       Just ts -> return (Right (Extract.merge foreigns (Extract.mergeMany ts)))
       Nothing -> return (Left Exit.GenerateCannotLoadArtifacts)
- 
-  
 
 loadTypesHelp :: FilePath -> Build.Module -> IO (MVar (Maybe Extract.Types))
 loadTypesHelp root modul =

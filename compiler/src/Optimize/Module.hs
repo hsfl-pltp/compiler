@@ -227,10 +227,22 @@ addDefHelp region annotations home name args body graph@(Opt.LocalGraph _ nodes 
                  nodes
                  (Map.unionWith (+) fields fieldCounts)
           in case Type.deepDealias tipe
-      -- This case supports main :: Int
+               -- This case supports main :: Int
                    of
                Can.TType hm nm []
                  | hm == ModuleName.basics && nm == Name.int ->
+                   Result.ok $
+                   addMain $
+                   Names.run $ Names.registerKernel Name.virtualDom Opt.Static
+               -- This case supports main :: Output
+               Can.TType _ nm []
+                 | nm == Name.output ->
+                   Result.ok $
+                   addMain $
+                   Names.run $ Names.registerKernel Name.virtualDom Opt.Static
+               -- This case supports main :: Arduino
+               Can.TType _ nm [_]
+                 | nm == Name.arduino ->
                    Result.ok $
                    addMain $
                    Names.run $ Names.registerKernel Name.virtualDom Opt.Static
