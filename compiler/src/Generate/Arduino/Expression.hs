@@ -46,13 +46,15 @@ generate expr =
     Opt.Call func args -> CExpr (generateCall func args)
     Opt.VarEnum (Opt.Global home name) index ->
         CExpr (Arduino.Enum (ArduinoName.fromLocal name) ( Arduino.Int (Index.toMachine index)))
+    Opt.VarBox (Opt.Global home name) ->
+      CExpr (Arduino.Ref (ArduinoName.fromGlobal home name))
     Opt.VarDebug name home region unhandledValueName -> CExpr (generateDebug name home region unhandledValueName)
     Opt.Function args body ->
       generateFunction (map ArduinoName.fromLocal args) (generate body)
     Opt.VarLocal name ->
       CExpr $ Arduino.Ref (ArduinoName.fromLocal name)
     Opt.VarGlobal (Opt.Global home name) ->
-      CExpr $ Arduino.Ref (ArduinoName.fromGlobal home name) 
+      CExpr $ Arduino.Ref (ArduinoName.fromGlobal home name)
     Opt.Record fields ->
       CExpr $ generateRecord fields
     Opt.Access record field ->
@@ -115,11 +117,8 @@ generateCall func args  =
       generateCoreCall global args
 
     Opt.VarBox _ ->
-      case args of
-        [arg] ->
-          generateArduinoExpr arg
-        _ ->
-          generateCallHelp func args
+      generateCallHelp func args
+
     _ ->
       generateCallHelp func args
 
@@ -175,7 +174,7 @@ generateBasicsCall home name args =
             right = generateArduinoExpr elmRight
           in
             generateGlobalCall home name [left, right]
-  
+
 
     _ ->
       generateGlobalCall home name (map (generateArduinoExpr) args)
@@ -299,7 +298,7 @@ generateMain mode home main =
   case main of
     Opt.Static ->
      Arduino.Ref (ArduinoName.fromGlobal home "main")
-        
+
 
     Opt.Dynamic msgType decoder ->
       Arduino.Ref (ArduinoName.fromGlobal home "main")
