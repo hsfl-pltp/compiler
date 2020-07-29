@@ -35,6 +35,8 @@ data Expr
   | Function (Maybe Name) [Name] [Stmt]
   | Enum Name Expr
   | CoreRef Name
+  | Access Expr Name
+
 
 -- STATEMENTS
 data Stmt
@@ -103,6 +105,23 @@ pretty level@(Level indent nextLevel) statement =
             , Name.toBuilder subname
             , "\n \n"
             ]
+        Object fields ->
+            mconcat[
+              indent
+              ,"typedef struct { \n"
+              ,generateStruct nextLevel fields
+              ,"} "
+              , Name.toBuilder name
+              ,"_stru"
+              ,"; \n \n"
+              , Name.toBuilder name
+              ,"_stru "
+              , Name.toBuilder name
+              ," = { \n"
+              , prettyExpr nextLevel expr
+              ,"\n};\n \n"
+            ]
+
         _ ->
           mconcat
             [ indent
@@ -174,8 +193,11 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
 
-    Object _ -> "Serial.print(\"Object is not supported yet\");\n    exit(EXIT_FAILURE)"
-
+    Object fields ->
+      mconcat
+        [generateFields nextLevel fields]   
+    Access expr field ->
+      prettyExpr level expr <> "." <> Name.toBuilder field
     Call expr1 exprs ->
       mconcat
         [prettyExpr nextLevel expr1, "(", fromExprBlock nextLevel exprs, ")"]
@@ -296,3 +318,16 @@ makeLevel level oldTabs =
    in Level
         (B.byteString (BS.take (level * 4) tabs))
         (makeLevel (level + 1) tabs)
+
+generateStruct :: Level -> [(Name, Expr)] -> Builder
+generateStruct level@(Level indent nextLevel) fields =
+  let names = (map (\(name, expr) -> name) fields)
+   in mconcat
+        (map
+           (\name -> indent <> "ElmValue* " <> Name.toBuilder name <> ";\n")
+           names)
+
+generateFields :: Level -> [(Name, Expr)] -> Builder
+generateFields  level@(Level indent nextLevel) fields =
+  let exprs = (map (\(name, expr) -> expr) fields)
+   in mconcat (List.intersperse ",\n" (map (prettyExpr level) exprs))

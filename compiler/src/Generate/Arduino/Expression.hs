@@ -27,6 +27,7 @@ import qualified Data.Utf8 as Utf8
 import qualified Generate.Mode as Mode
 import qualified Elm.Package as Pkg
 import qualified Data.Index as Index
+import qualified Data.Map as Map
 
 generateArduinoExpr :: Opt.Expr -> Arduino.Expr
 generateArduinoExpr expression =
@@ -52,6 +53,10 @@ generate expr =
       CExpr $ Arduino.Ref (ArduinoName.fromLocal name)
     Opt.VarGlobal (Opt.Global home name) ->
       CExpr $ Arduino.Ref (ArduinoName.fromGlobal home name) 
+    Opt.Record fields ->
+      CExpr $ generateRecord fields
+    Opt.Access record field ->
+      CExpr $ Arduino.Access (generateArduinoExpr record) (ArduinoName.fromLocal field)
     _ -> error (show expr)
 
 data Code
@@ -372,3 +377,9 @@ codeToStmtList code =
 
     CBlock stmts ->
         stmts
+
+generateRecord :: Map.Map Name.Name Opt.Expr -> Arduino.Expr
+generateRecord fields =
+  let toPair (field, value) =
+        (ArduinoName.fromLocal field, generateArduinoExpr value)
+   in Arduino.Object (map toPair (Map.toList fields))
