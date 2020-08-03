@@ -27,64 +27,68 @@ typedef struct {
     Tag tag;
 } ElmBool;
 
-typedef struct ElmValue
-{
-  float value;
-  bool b;
-  Tag tag;
-
-  ElmValue(float value) : value(value), tag(Tag_Float)//Constructor
-  {
-    Serial.print("Cons Float");
-  }
-  ElmValue(bool b) : b(b), tag(Tag_Bool)//Constructor
-  {
-    Serial.print("Cons Bool");
-  }
-  ~ElmValue()//Destructor
-  {
-    Serial.print("Des");
-  }
+typedef union {
+    ElmFloat elm_float;
+    ElmBool elm_bool;
 } ElmValue;
 
-
 arx::shared_ptr<ElmValue> _Basics_newElmBool(bool value) {
-    arx::shared_ptr<ElmValue> p {new ElmValue(value)};
-    return p;
+    ElmBool p;
+    p.value = value;
+    p.tag = Tag_Bool;
+    arx::shared_ptr<ElmValue> ev {new ElmValue};
+    ev->elm_bool.value = value;
+    ev->elm_bool.tag = Tag_Bool;
+    return ev;
 }
 
 arx::shared_ptr<ElmValue> _Basics_newElmFloat(float value) {
-    arx::shared_ptr<ElmValue> p {new ElmValue(value)};
-    return p;
+    ElmFloat p;
+    p.value = value;
+    p.tag = Tag_Float;
+    arx::shared_ptr<ElmValue> ev {new ElmValue};
+    ev->elm_float.value = value;
+    ev->elm_float.tag = Tag_Float;
+    return ev;
 }
 
 float _Basics_ElmValueToFloat (arx::shared_ptr<ElmValue> pointer) {
-    return pointer->value;
+    return pointer->elm_float.value;
 }
 
 bool _Basics_ElmValueToBool (arx::shared_ptr<ElmValue> pointer) {
-    return pointer->b;
+    return pointer->elm_bool.value;
 }
 
 static arx::shared_ptr<ElmValue> _Basics_add(arx::shared_ptr<ElmValue> n, arx::shared_ptr<ElmValue> m) {
-    return _Basics_newElmFloat(n->value + m->value);
+    ElmFloat a = n -> elm_float;
+    ElmFloat b = m -> elm_float;
+    return _Basics_newElmFloat(a.value + b.value);
 }
 
 static arx::shared_ptr<ElmValue> _Basics_mul(arx::shared_ptr<ElmValue> n, arx::shared_ptr<ElmValue> m) {
-    return _Basics_newElmFloat(n->value * m->value);
+    ElmFloat a = n -> elm_float;
+    ElmFloat b = m -> elm_float;
+    return _Basics_newElmFloat(a.value * b.value);
 }
 
 static arx::shared_ptr<ElmValue> _Basics_div(arx::shared_ptr<ElmValue> n, arx::shared_ptr<ElmValue> m) {
-    return _Basics_newElmFloat(n->value / m->value);
+    ElmFloat a = n -> elm_float;
+    ElmFloat b = m -> elm_float;
+    return _Basics_newElmFloat(a.value / b.value);
 }
 
 static arx::shared_ptr<ElmValue> _Basics_sub(arx::shared_ptr<ElmValue> n, arx::shared_ptr<ElmValue> m) {
-    return _Basics_newElmFloat(n->value - m->value);
+    ElmFloat a = n -> elm_float;
+    ElmFloat b = m -> elm_float;
+    return _Basics_newElmFloat(a.value - b.value);
 }
 
 static arx::shared_ptr<ElmValue> _Basics_modBy(arx::shared_ptr<ElmValue> modulus, arx::shared_ptr<ElmValue> x) {
-    int ia = modulus->value;
-    int ib = x->value;
+    ElmFloat pa = modulus -> elm_float;
+    ElmFloat pb = x -> elm_float;
+    int ia = pa.value;
+    int ib = pb.value;
     int i = ib % ia;
     if(ia == 0) {
         exit(EXIT_FAILURE);
@@ -112,10 +116,10 @@ static arx::shared_ptr<ElmValue> _Debug_log__Prod(String n, arx::shared_ptr<ElmV
 static arx::shared_ptr<ElmValue> _Debug_log(String n, arx::shared_ptr<ElmValue> v) {
     String output = n + " ";
 
-    if(v->tag == Tag_Float){
+    if(v->elm_float.tag == Tag_Float){
         output = output + _Basics_ElmValueToFloat(v);
-    } else if (v->tag == Tag_Bool) {
-        if(v->value){
+    } else if (v->elm_bool.tag == Tag_Bool) {
+        if(v->elm_bool.value){
             output = output + "True";
         } else {
             output = output + "False";
