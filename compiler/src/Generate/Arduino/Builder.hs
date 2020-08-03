@@ -324,7 +324,7 @@ generateStruct level@(Level indent nextLevel) fields =
   let names = (map (\(name, expr) -> name) fields)
    in mconcat
         (map
-           (\name -> indent <> "ElmValue* " <> Name.toBuilder name <> ";\n")
+           (\name -> indent <> "arx::shared_ptr<ElmValue> " <> Name.toBuilder name <> ";\n")
            names)
 
 generateFields :: Level -> [(Name, Expr)] -> Builder
