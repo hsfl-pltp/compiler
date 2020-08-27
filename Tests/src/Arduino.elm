@@ -1,8 +1,8 @@
 module Arduino exposing (..)
 
 
-type Output
-    = Output Bool
+type alias Output =
+    { pin1 : Bool }
 
 
 digitalPin : Bool -> Output

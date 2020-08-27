@@ -1,10 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Generate.Arduino
-  ( generate
-  ) where
+  ( generate,
+  )
+where
 
+import qualified AST.Canonical as Can
+import qualified AST.Optimized as Opt
 import qualified Data.ByteString.Builder as B
+import qualified Data.ByteString.Char8 as By
+import qualified Data.Index as Index
 import qualified Data.List as List
 import Data.Map ((!))
 import qualified Data.Map as Map
@@ -12,30 +17,23 @@ import Data.Monoid ((<>))
 import qualified Data.Name as Name
 import qualified Data.Set as Set
 import qualified Data.Utf8 as Utf8
-import Prelude hiding (cycle, print)
-
-import qualified AST.Canonical as Can
-import qualified AST.Optimized as Opt
-import qualified Data.Index as Index
 import qualified Elm.Kernel as K
 import qualified Elm.ModuleName as ModuleName
 import qualified Generate.Arduino.Builder as Arduino
 import qualified Generate.Arduino.Expression as Expr
-import qualified Generate.Arduino.Name as ArduinoName
-import qualified Generate.Boilerplate as BP
-import qualified Generate.Mode as Mode
-import qualified Reporting.Doc as D
-import qualified Reporting.Render.Type as RT
-import qualified Reporting.Render.Type.Localizer as L
-
 import qualified Generate.Arduino.Functions as Functions
 import qualified Generate.Arduino.Kernel as Kernel
+import qualified Generate.Arduino.Name as ArduinoName
+import qualified Generate.Boilerplate as BP
 import qualified Generate.JavaScript.Builder as JS
 import qualified Generate.JavaScript.Expression as JSExpr
 import qualified Generate.JavaScript.Functions as JSFunctions
 import qualified Generate.JavaScript.Name as JsName
-
-import qualified Data.ByteString.Char8 as By
+import qualified Generate.Mode as Mode
+import qualified Reporting.Doc as D
+import qualified Reporting.Render.Type as RT
+import qualified Reporting.Render.Type.Localizer as L
+import Prelude hiding (cycle, print)
 
 -- GENERATE
 type Graph = Map.Map Opt.Global Opt.Node
@@ -45,13 +43,13 @@ type Mains = Map.Map ModuleName.Canonical Opt.Main
 generate :: Mode.Mode -> Opt.GlobalGraph -> Mains -> B.Builder
 generate mode (Opt.GlobalGraph graph _) mains =
   let state = Map.foldrWithKey (addMain mode graph) emptyState mains
-   in Functions.functions <>
-      Kernel.kernel <>
-      stateToBuilder state <>
-      BP.sandwichArduino (perfNote mode) (toMainNames mode mains)
+   in Functions.functions
+        <> Kernel.kernel
+        <> stateToBuilder state
+        <> BP.sandwichArduino (perfNote mode) (toMainNames mode mains)
 
 addMain ::
-     Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
+  Mode.Mode -> Graph -> ModuleName.Canonical -> Opt.Main -> State -> State
 addMain mode graph home _ state =
   addGlobal mode graph state (Opt.Global home "main")
 
@@ -66,12 +64,11 @@ perfNote mode =
 emptyState :: State
 emptyState = State mempty [] Set.empty
 
-data State =
-  State
-    { _revKernels :: [B.Builder]
-    , _revBuilders :: [B.Builder]
-    , _seenGlobals :: Set.Set Opt.Global
-    }
+data State = State
+  { _revKernels :: [B.Builder],
+    _revBuilders :: [B.Builder],
+    _seenGlobals :: Set.Set Opt.Global
+  }
 
 stateToBuilder :: State -> B.Builder
 stateToBuilder (State revKernels revBuilders _) =
@@ -86,23 +83,24 @@ addGlobal :: Mode.Mode -> Graph -> State -> Opt.Global -> State
 addGlobal mode graph state@(State revKernels builders seen) global =
   if Set.member global seen
     then state
-    else addGlobalHelp mode graph global $
-         State revKernels builders (Set.insert global seen)
+    else
+      addGlobalHelp mode graph global $
+        State revKernels builders (Set.insert global seen)
 
 addGlobalHelp :: Mode.Mode -> Graph -> Opt.Global -> State -> State
 addGlobalHelp mode graph global state =
   let addDeps deps someState = Set.foldl' (addGlobal mode graph) someState deps
-    -- test = Opt.Kernel [K.JS (By.pack "Test")] (foldr K.addKernelDep Set.empty [K.JS (By.pack "Test")])
-   in case graph ! global of
+   in -- test = Opt.Kernel [K.JS (By.pack "Test")] (foldr K.addKernelDep Set.empty [K.JS (By.pack "Test")])
+      case graph ! global of
         Opt.Define expr deps ->
           addStmt (addDeps deps state) (var global (Expr.generate expr))
-    -- For testing purposes we ignore the kernel code
+        -- For testing purposes we ignore the kernel code
         Opt.Kernel chunks dep -> state
         Opt.Enum index -> addStmt state (generateEnum mode global index)
-        Opt.Box ->
-          addStmt
-            (addGlobal mode graph state identity)
-            (generateBox mode global)
+        -- Opt.Box ->
+        --   addStmt
+        --     (addGlobal mode graph state identity)
+        --     (generateBox mode global)
         expr -> error ("unsupported argument: " ++ show expr)
 
 addStmt :: State -> Arduino.Stmt -> State
@@ -129,10 +127,7 @@ isDebugger (Opt.Global (ModuleName.Canonical _ home) _) = home == Name.debugger
 
 generateEnum :: Mode.Mode -> Opt.Global -> Index.ZeroBased -> Arduino.Stmt
 generateEnum mode global@(Opt.Global home name) index =
-  Arduino.Var "any" (ArduinoName.fromGlobal home name) $
-  case mode of
-    Mode.Dev _ -> Expr.codeToExpr (Expr.generateCtor mode global index 0)
-    Mode.Prod _ -> Arduino.Int (Index.toMachine index)
+  Arduino.Var "any" (ArduinoName.fromGlobal home name) (Expr.codeToExpr (Expr.generateCtor mode global []))
 
 -- GENERATE KERNEL
 generateKernel :: Mode.Mode -> [K.Chunk] -> B.Builder
@@ -175,18 +170,17 @@ generateMainNames mode (Trie maybeMain subs) =
             Arduino.exprToBuilder (Expr.generateMain mode home main)
    in case Map.toList subs of
         [] -> starter ""
-        (name, subTrie):otherSubTries -> generateMainNames mode subTrie
+        (name, subTrie) : otherSubTries -> generateMainNames mode subTrie
 
 addSubTries :: Mode.Mode -> B.Builder -> (Name.Name, Trie) -> B.Builder
 addSubTries mode end (name, trie) =
   ",'" <> Utf8.toBuilder name <> "':" <> generateMainNames mode trie <> end
 
 -- BUILD TRIES
-data Trie =
-  Trie
-    { _main :: Maybe (ModuleName.Canonical, Opt.Main)
-    , _subs :: Map.Map Name.Name Trie
-    }
+data Trie = Trie
+  { _main :: Maybe (ModuleName.Canonical, Opt.Main),
+    _subs :: Map.Map Name.Name Trie
+  }
 
 emptyTrie :: Trie
 emptyTrie = Trie Nothing Map.empty
@@ -199,7 +193,7 @@ segmentsToTrie :: ModuleName.Canonical -> [Name.Name] -> Opt.Main -> Trie
 segmentsToTrie home segments main =
   case segments of
     [] -> Trie (Just (home, main)) Map.empty
-    segment:otherSegments ->
+    segment : otherSegments ->
       Trie
         Nothing
         (Map.singleton segment (segmentsToTrie home otherSegments main))
@@ -216,9 +210,9 @@ checkedMerge a b =
     (Just _, Just _) -> error "cannot have two modules with the same name"
 
 -- GENERATE BOX
-generateBox :: Mode.Mode -> Opt.Global -> Arduino.Stmt
-generateBox mode global@(Opt.Global home name) =
-  Arduino.Var "any" (ArduinoName.fromGlobal home name) $
-  case mode of
-    Mode.Dev _ -> Expr.codeToExpr (Expr.generateCtor mode global Index.first 1)
-    Mode.Prod _ -> Arduino.Ref (ArduinoName.fromGlobal ModuleName.basics Name.identity)
+-- generateBox :: Mode.Mode -> Opt.Global -> Arduino.Stmt
+-- generateBox mode global@(Opt.Global home name) =
+--   Arduino.Var "any" (ArduinoName.fromGlobal home name) $
+--     case mode of
+--       Mode.Dev _ -> Expr.codeToExpr (Expr.generateCtor mode global Index.first 1)
+--       Mode.Prod _ -> Arduino.Ref (ArduinoName.fromGlobal ModuleName.basics Name.identity)

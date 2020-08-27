@@ -28,7 +28,8 @@ data Expr
   | Double Builder
   | If Expr Expr Expr
   | Prefix PrefixOp Expr
-  | Object [(Name, Expr)]
+  | Class Name [Expr]
+  | Struct [(Name, Expr)]
   | Call Expr [Expr]
   | Infix InfixOp Expr Expr
   | Function (Maybe Name) [Name] [Stmt]
@@ -69,7 +70,7 @@ stmtToBuilder stmts = pretty levelZero stmts
 
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Level -> Stmt -> Builder
-pretty level@(Level indent nextLevel) statement =
+pretty level@(Level indent nextLevel@(Level nextIndent nextNextLevel)) statement =
   case statement of
     Block array -> mconcat (map (pretty level) array)
     EmptyStmt -> error "Not supported EmptyStmt"
@@ -84,16 +85,6 @@ pretty level@(Level indent nextLevel) statement =
               Name.toBuilder name,
               prettyExpr level expr
             ]
-        If _ _ _ ->
-          mconcat
-            [ indent,
-              prettyDataType dataType,
-              " ",
-              Name.toBuilder name,
-              " = ",
-              prettyExpr nextLevel expr,
-              ";\n"
-            ]
         CoreRef subname ->
           mconcat
             [ indent,
@@ -103,30 +94,15 @@ pretty level@(Level indent nextLevel) statement =
               Name.toBuilder subname,
               "\n\n"
             ]
-        Object fields ->
-          mconcat
-            [ indent,
-              "typedef struct {\n",
-              generateStruct nextLevel fields,
-              "} ",
-              Name.toBuilder name,
-              "_stru",
-              ";\n\n",
-              Name.toBuilder name,
-              "_stru ",
-              Name.toBuilder name,
-              " = {\n",
-              prettyExpr nextLevel expr,
-              "\n};\n\n"
-            ]
         _ ->
           mconcat
             [ indent,
               prettyDataType dataType,
               " ",
               Name.toBuilder name,
-              " = ",
-              prettyExpr nextLevel expr,
+              " =\n",
+              nextIndent,
+              prettyExpr nextNextLevel expr,
               ";\n\n"
             ]
     Decl dataType name -> mconcat ["\n", prettyDataType dataType, " ", name]
@@ -169,16 +145,16 @@ exprToBuilder expr = prettyExpr levelZero expr
 
 --Converts an argument of the type Expr into a String.
 prettyExpr :: Level -> Expr -> Builder
-prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
+prettyExpr level@(Level indent nextLevel) expression =
   case expression of
     String string -> mconcat ["\"", string, "\""]
     Ref name -> Name.toBuilder name
-    Bool bool -> "_Basics_newElmBool(" <> if (bool) then "true" <> ")" else "false" <> ")"
+    Bool bool -> "Bool(" <> if (bool) then "true" <> ")" else "false" <> ")"
     Int n -> B.intDec n
-    Double double -> "_Basics_newElmFloat(" <> double <> ")"
+    Double double -> "Float(" <> double <> ")"
     If infixExpr expr1 expr2 ->
       mconcat
-        [ "(",
+        [ "GetBool(",
           prettyExpr nextLevel infixExpr,
           ") ? ",
           prettyExpr nextLevel expr1,
@@ -187,14 +163,27 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
         ]
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
-    Object fields ->
-      mconcat
-        [generateFields nextLevel fields]
+    Class name args ->
+      mconcat ["Constr(", generateCtorArguments nextLevel name args, ")"]
+    Struct fields ->
+      mconcat ["Record(", generateRecordArguments nextLevel fields, ")"]
     Access expr field ->
-      prettyExpr level expr <> "." <> Name.toBuilder field
+      mconcat
+        [ "GetField(",
+          prettyExpr level expr,
+          ", \"",
+          Name.toBuilder field,
+          "\")"
+        ]
     Call expr1 exprs ->
       mconcat
-        [prettyExpr nextLevel expr1, "(", fromExprBlock nextLevel exprs, ")"]
+        [ prettyExpr nextLevel expr1,
+          "(\n",
+          fromExprBlock nextLevel exprs,
+          "\n",
+          indent,
+          ")"
+        ]
     Infix infixoperator expr1 expr2 ->
       mconcat
         [ prettyExpr nextLevel expr1,
@@ -237,8 +226,8 @@ commaSep :: [Builder] -> Builder
 commaSep builders = mconcat (List.intersperse ", " builders)
 
 fromExprBlock :: Level -> [Expr] -> Builder
-fromExprBlock level exprs =
-  mconcat (List.intersperse ", " (map (prettyExpr level) exprs))
+fromExprBlock (Level indent nextLevel) exprs =
+  mconcat (List.intersperse ",\n" (map (\e -> indent <> prettyExpr nextLevel e) exprs))
 
 data InfixOp
   = OpAdd -- +
@@ -301,13 +290,13 @@ data Level
   = Level Builder Level
 
 levelZero :: Level
-levelZero = Level mempty (makeLevel 1 (BS.replicate 16 0x20 {-\t-}))
+levelZero = Level mempty (makeLevel 1 (BS.replicate 2 0x20 {-\t-}))
 
 levelAny :: Int -> Level
 levelAny n =
   Level
     (B.byteString (BS.replicate n 0x20))
-    (makeLevel (n + 1) (BS.replicate 8 0x20 {-\t-}))
+    (makeLevel (n + 1) (BS.replicate 2 0x20 {-\t-}))
 
 makeLevel :: Int -> BS.ByteString -> Level
 makeLevel level oldTabs =
@@ -328,7 +317,36 @@ generateStruct level@(Level indent nextLevel) fields =
             names
         )
 
-generateFields :: Level -> [(Name, Expr)] -> Builder
-generateFields level@(Level indent nextLevel) fields =
-  let exprs = (map (\(name, expr) -> expr) fields)
-   in mconcat (List.intersperse ",\n" (map (prettyExpr level) exprs))
+generateCtorArguments :: Level -> Name -> [Expr] -> Builder
+generateCtorArguments level name args =
+  mconcat
+    [ "\"",
+      Name.toBuilder name,
+      "\", ",
+      generateArguments level args,
+      ", ",
+      B.intDec (length args)
+    ]
+
+generateRecordArguments :: Level -> [(Name, Expr)] -> Builder
+generateRecordArguments level args =
+  mconcat
+    [ "new arx::shared_ptr<Entry>[",
+      B.intDec (length args),
+      "] {",
+      mconcat (List.intersperse ", " (map (uncurry generateEntry) args)),
+      "}, ",
+      B.intDec (length args)
+    ]
+  where
+    generateEntry field exp = "arx::shared_ptr<Entry>(new Entry{\"" <> Name.toBuilder field <> "\", " <> prettyExpr level exp <> "})"
+
+generateArguments :: Level -> [Expr] -> Builder
+generateArguments level args =
+  mconcat
+    [ "new arx::shared_ptr<ElmValue>[",
+      B.intDec (length args),
+      "] {",
+      mconcat (List.intersperse ", " (map (prettyExpr level) args)),
+      "}"
+    ]
