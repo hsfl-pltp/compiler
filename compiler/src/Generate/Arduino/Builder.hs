@@ -1,14 +1,15 @@
-{-# OPTIONS_GHC -Wall #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wall #-}
 
 module Generate.Arduino.Builder
-  ( Expr(..)
-  , stmtToBuilder
-  , exprToBuilder
-  , Stmt(..)
-  , PrefixOp(..)
-  , InfixOp(..)
-  ) where
+  ( Expr (..),
+    stmtToBuilder,
+    exprToBuilder,
+    Stmt (..),
+    PrefixOp (..),
+    InfixOp (..),
+  )
+where
 
 import qualified Data.ByteString as BS
 import Data.ByteString.Builder as B
@@ -20,14 +21,12 @@ import qualified Generate.Arduino.Name as Name
 -- Expressions
 data Expr
   = String Builder
-  | Null
   | Ref Name
   | Bool Bool
   | Integer Builder
   | Int Int
   | Double Builder
   | If Expr Expr Expr
-  | While Expr Expr Expr
   | Prefix PrefixOp Expr
   | Object [(Name, Expr)]
   | Call Expr [Expr]
@@ -36,7 +35,6 @@ data Expr
   | Enum Name Expr
   | CoreRef Name
   | Access Expr Name
-
 
 -- STATEMENTS
 data Stmt
@@ -80,87 +78,86 @@ pretty level@(Level indent nextLevel) statement =
       case expr of
         Function _ _ _ ->
           mconcat
-            [ indent
-            , prettyDataType dataType
-            , " "
-            , Name.toBuilder name
-            , prettyExpr level expr
+            [ indent,
+              prettyDataType dataType,
+              " ",
+              Name.toBuilder name,
+              prettyExpr level expr
             ]
         If _ _ _ ->
           mconcat
-          [ indent
-          , prettyDataType dataType
-          , " "
-          , Name.toBuilder name
-          , " = "
-          , prettyExpr nextLevel expr
-          , ";\n"
-          ]
+            [ indent,
+              prettyDataType dataType,
+              " ",
+              Name.toBuilder name,
+              " = ",
+              prettyExpr nextLevel expr,
+              ";\n"
+            ]
         CoreRef subname ->
           mconcat
-            [ indent 
-            , "#define "
-            , Name.toBuilder name
-            , " "
-            , Name.toBuilder subname
-            , "\n \n"
+            [ indent,
+              "#define ",
+              Name.toBuilder name,
+              " ",
+              Name.toBuilder subname,
+              "\n \n"
             ]
         Object fields ->
-            mconcat[
-              indent
-              ,"typedef struct { \n"
-              ,generateStruct nextLevel fields
-              ,"} "
-              , Name.toBuilder name
-              ,"_stru"
-              ,"; \n \n"
-              , Name.toBuilder name
-              ,"_stru "
-              , Name.toBuilder name
-              ," = { \n"
-              , prettyExpr nextLevel expr
-              ,"\n};\n \n"
+          mconcat
+            [ indent,
+              "typedef struct { \n",
+              generateStruct nextLevel fields,
+              "} ",
+              Name.toBuilder name,
+              "_stru",
+              "; \n \n",
+              Name.toBuilder name,
+              "_stru ",
+              Name.toBuilder name,
+              " = { \n",
+              prettyExpr nextLevel expr,
+              "\n};\n \n"
             ]
-
         _ ->
           mconcat
-            [ indent
-            , prettyDataType dataType
-            , " "
-            , Name.toBuilder name
-            , " = "
-            , prettyExpr nextLevel expr
-            , ";\n \n"
+            [ indent,
+              prettyDataType dataType,
+              " ",
+              Name.toBuilder name,
+              " = ",
+              prettyExpr nextLevel expr,
+              ";\n \n"
             ]
     Decl dataType name -> mconcat ["\n", prettyDataType dataType, " ", name]
     Const constExpr -> mconcat ["const ", prettyExpr nextLevel constExpr, ";\n"]
     Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
     IfStmt condition thenStmt elseStmt ->
       mconcat
-        [ " ("
-        , prettyExpr nextLevel condition
-        , ") ? "
-        , pretty nextLevel thenStmt
-        , " : "
-        , pretty nextLevel elseStmt
+        [ " (",
+          prettyExpr nextLevel condition,
+          ") ? ",
+          pretty nextLevel thenStmt,
+          " : ",
+          pretty nextLevel elseStmt
         ]
     WhileStmt condition loopStmt ->
       mconcat
-        [ "while ("
-        , prettyExpr nextLevel condition
-        , ") {\n"
-        , pretty nextLevel loopStmt
-        , "}"
+        [ "while (",
+          prettyExpr nextLevel condition,
+          ") {\n",
+          pretty nextLevel loopStmt,
+          "}"
         ]
     FunctionStmt name args stmts ->
       mconcat
-        [ Name.toBuilder name
-        , "( void* args ) {\n"
-        , indent
-        , "void* tmp0;"
-        , argsToBuilder args indent
-        , fromStmtBlock nextLevel stmts
-        , "}\n"
+        [ Name.toBuilder name,
+          "( void* args ) {\n",
+          indent,
+          "void* tmp0;",
+          argsToBuilder args indent,
+          fromStmtBlock nextLevel stmts,
+          "}\n"
         ]
     EnumStmt name exprs -> error "Not supported EnumStmt"
 
@@ -175,27 +172,24 @@ prettyExpr :: Level -> Expr -> Builder
 prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
   case expression of
     String string -> mconcat ["\"", string, "\""]
-    Null -> "null"
     Ref name -> Name.toBuilder name
-    Bool bool -> "_Basics_newElmBool(" <> if(bool) then "true" <>")" else "false" <> ")"
+    Bool bool -> "_Basics_newElmBool(" <> if (bool) then "true" <> ")" else "false" <> ")"
     Int n -> B.intDec n
-    Double double ->"_Basics_newElmFloat("<> double <>")"
+    Double double -> "_Basics_newElmFloat(" <> double <> ")"
     If infixExpr expr1 expr2 ->
       mconcat
-        [ "("
-        , prettyExpr nextLevel infixExpr
-        , ") ? "
-        , prettyExpr nextLevel expr1
-        , " : "
-        , prettyExpr nextLevel expr2
+        [ "(",
+          prettyExpr nextLevel infixExpr,
+          ") ? ",
+          prettyExpr nextLevel expr1,
+          " : ",
+          prettyExpr nextLevel expr2
         ]
-    While _ _ _ -> error "Not supported While"
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
-
     Object fields ->
       mconcat
-        [generateFields nextLevel fields]   
+        [generateFields nextLevel fields]
     Access expr field ->
       prettyExpr level expr <> "." <> Name.toBuilder field
     Call expr1 exprs ->
@@ -203,20 +197,20 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
         [prettyExpr nextLevel expr1, "(", fromExprBlock nextLevel exprs, ")"]
     Infix infixoperator expr1 expr2 ->
       mconcat
-        [ prettyExpr nextLevel expr1
-        , " "
-        , prettyInfix infixoperator
-        , " "
-        , prettyExpr nextLevel expr2
+        [ prettyExpr nextLevel expr1,
+          " ",
+          prettyInfix infixoperator,
+          " ",
+          prettyExpr nextLevel expr2
         ]
     Function maybeName args stmts ->
       mconcat
-        [ maybe mempty Name.toBuilder maybeName
-        , "(" 
-        , commaSep (map (\x -> "arx::shared_ptr<ElmValue> "<> Name.toBuilder x) args)
-        , ") {\n"
-        , fromStmtBlock nextLevel stmts
-        , "}\n \n"
+        [ maybe mempty Name.toBuilder maybeName,
+          "(",
+          commaSep (map (\x -> "arx::shared_ptr<ElmValue> " <> Name.toBuilder x) args),
+          ") {\n",
+          fromStmtBlock nextLevel stmts,
+          "}\n \n"
         ]
     Enum name exprs ->
       mconcat ["enum ", Name.toBuilder name, prettyExpr nextLevel exprs, "\n"]
@@ -227,12 +221,17 @@ indexedMap f l = zipWith f l [0 ..]
 argsToBuilder :: [Name.Name] -> Builder -> Builder
 argsToBuilder args indent =
   mconcat
-    (indexedMap
-       (\x i ->
-          indent <>
-          "void* " <> Name.toBuilder x <> " = args[" <> (B.int8Dec i) <> "]; \n")
-       args)
-
+    ( indexedMap
+        ( \x i ->
+            indent
+              <> "void* "
+              <> Name.toBuilder x
+              <> " = args["
+              <> (B.int8Dec i)
+              <> "]; \n"
+        )
+        args
+    )
 
 commaSep :: [Builder] -> Builder
 commaSep builders = mconcat (List.intersperse ", " builders)
@@ -244,7 +243,7 @@ fromExprBlock level exprs =
 data InfixOp
   = OpAdd -- +
   | OpSub -- -
-  | OpMul -- *
+  | OpMul --  *
   | OpDiv -- /
   | OpMod -- %
   | OpEq -- ===
@@ -254,10 +253,11 @@ data InfixOp
   | OpGt -- >
   | OpGe -- >=
   | OpAnd -- &&
-  | OpOr -- ||
+  | OpOr --  ||
   | OpBitwiseAnd -- &
-  | OpBitwiseXor -- ^
-  | OpBitwiseOr -- |
+  | -- |
+    OpBitwiseXor
+  | OpBitwiseOr --  |
   | OpLShift -- <<
   | OpSpRShift -- >>
   | OpZfRShift -- >>>
@@ -272,7 +272,7 @@ prettyInfix minfix =
   case minfix of
     OpAdd -> " + "
     OpSub -> " - "
-    OpMul -> " * " -- *
+    OpMul -> " * " --  *
     OpDiv -> " / " -- /
     OpMod -> " % "
     OpEq -> " == "
@@ -297,17 +297,17 @@ prettyPrefix mprefix =
     PrefixNegate -> "-"
     PrefixComplement -> "~+"
 
-data Level =
-  Level Builder Level
+data Level
+  = Level Builder Level
 
 levelZero :: Level
-levelZero = Level mempty (makeLevel 1 (BS.replicate 16 0x20)) {-\t-}
+levelZero = Level mempty (makeLevel 1 (BS.replicate 16 0x20 {-\t-}))
 
 levelAny :: Int -> Level
 levelAny n =
   Level
     (B.byteString (BS.replicate n 0x20))
-    (makeLevel (n + 1) (BS.replicate 8 0x20)) {-\t-}
+    (makeLevel (n + 1) (BS.replicate 8 0x20 {-\t-}))
 
 makeLevel :: Int -> BS.ByteString -> Level
 makeLevel level oldTabs =
@@ -323,11 +323,12 @@ generateStruct :: Level -> [(Name, Expr)] -> Builder
 generateStruct level@(Level indent nextLevel) fields =
   let names = (map (\(name, expr) -> name) fields)
    in mconcat
-        (map
-           (\name -> indent <> "arx::shared_ptr<ElmValue> " <> Name.toBuilder name <> ";\n")
-           names)
+        ( map
+            (\name -> indent <> "arx::shared_ptr<ElmValue> " <> Name.toBuilder name <> ";\n")
+            names
+        )
 
 generateFields :: Level -> [(Name, Expr)] -> Builder
-generateFields  level@(Level indent nextLevel) fields =
+generateFields level@(Level indent nextLevel) fields =
   let exprs = (map (\(name, expr) -> expr) fields)
    in mconcat (List.intersperse ",\n" (map (prettyExpr level) exprs))
