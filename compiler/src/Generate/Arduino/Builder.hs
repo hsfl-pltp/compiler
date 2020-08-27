@@ -101,23 +101,23 @@ pretty level@(Level indent nextLevel) statement =
               Name.toBuilder name,
               " ",
               Name.toBuilder subname,
-              "\n \n"
+              "\n\n"
             ]
         Object fields ->
           mconcat
             [ indent,
-              "typedef struct { \n",
+              "typedef struct {\n",
               generateStruct nextLevel fields,
               "} ",
               Name.toBuilder name,
               "_stru",
-              "; \n \n",
+              ";\n\n",
               Name.toBuilder name,
               "_stru ",
               Name.toBuilder name,
-              " = { \n",
+              " = {\n",
               prettyExpr nextLevel expr,
-              "\n};\n \n"
+              "\n};\n\n"
             ]
         _ ->
           mconcat
@@ -127,14 +127,14 @@ pretty level@(Level indent nextLevel) statement =
               Name.toBuilder name,
               " = ",
               prettyExpr nextLevel expr,
-              ";\n \n"
+              ";\n\n"
             ]
     Decl dataType name -> mconcat ["\n", prettyDataType dataType, " ", name]
     Const constExpr -> mconcat ["const ", prettyExpr nextLevel constExpr, ";\n"]
     Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
     IfStmt condition thenStmt elseStmt ->
       mconcat
-        [ " (",
+        [ "(",
           prettyExpr nextLevel condition,
           ") ? ",
           pretty nextLevel thenStmt,
@@ -210,7 +210,7 @@ prettyExpr level@(Level indent nextLevel@(Level deeperIndent _)) expression =
           commaSep (map (\x -> "arx::shared_ptr<ElmValue> " <> Name.toBuilder x) args),
           ") {\n",
           fromStmtBlock nextLevel stmts,
-          "}\n \n"
+          "}\n\n"
         ]
     Enum name exprs ->
       mconcat ["enum ", Name.toBuilder name, prettyExpr nextLevel exprs, "\n"]
@@ -228,7 +228,7 @@ argsToBuilder args indent =
               <> Name.toBuilder x
               <> " = args["
               <> (B.int8Dec i)
-              <> "]; \n"
+              <> "];\n"
         )
         args
     )
