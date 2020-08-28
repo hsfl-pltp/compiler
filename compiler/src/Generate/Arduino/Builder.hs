@@ -149,12 +149,12 @@ prettyExpr level@(Level indent nextLevel) expression =
   case expression of
     String string -> mconcat ["\"", string, "\""]
     Ref name -> Name.toBuilder name
-    Bool bool -> "Bool(" <> if (bool) then "true" <> ")" else "false" <> ")"
+    Bool bool -> "Utils::Bool(" <> if (bool) then "true" <> ")" else "false" <> ")"
     Int n -> B.intDec n
-    Double double -> "Float(" <> double <> ")"
+    Double double -> "Utils::Float(" <> double <> ")"
     If infixExpr expr1 expr2 ->
       mconcat
-        [ "GetBool(",
+        [ "Utils::GetBool(",
           prettyExpr nextLevel infixExpr,
           ") ? ",
           prettyExpr nextLevel expr1,
@@ -164,12 +164,12 @@ prettyExpr level@(Level indent nextLevel) expression =
     Prefix prefixOperator expr1 ->
       mconcat [prettyPrefix prefixOperator, prettyExpr nextLevel expr1]
     Class name args ->
-      mconcat ["Constr(", generateCtorArguments nextLevel name args, ")"]
+      mconcat ["Utils::Constr(", generateCtorArguments nextLevel name args, ")"]
     Struct fields ->
-      mconcat ["Record(", generateRecordArguments nextLevel fields, ")"]
+      mconcat ["Utils::Record(", generateRecordArguments nextLevel fields, ")"]
     Access expr field ->
       mconcat
-        [ "GetField(",
+        [ "Utils::GetField(",
           prettyExpr level expr,
           ", \"",
           Name.toBuilder field,
@@ -290,23 +290,13 @@ data Level
   = Level Builder Level
 
 levelZero :: Level
-levelZero = Level mempty (makeLevel 1 (BS.replicate 2 0x20 {-\t-}))
+levelZero = Level mempty (makeLevel 1 2)
 
-levelAny :: Int -> Level
-levelAny n =
+makeLevel :: Int -> Int -> Level
+makeLevel level levelIndent =
   Level
-    (B.byteString (BS.replicate n 0x20))
-    (makeLevel (n + 1) (BS.replicate 2 0x20 {-\t-}))
-
-makeLevel :: Int -> BS.ByteString -> Level
-makeLevel level oldTabs =
-  let tabs =
-        if level <= (BS.length oldTabs)
-          then oldTabs
-          else BS.replicate (BS.length oldTabs * 2) 0x20 {-\t-}
-   in Level
-        (B.byteString (BS.take (level * 4) tabs))
-        (makeLevel (level + 1) tabs)
+    (B.byteString (BS.replicate (level * levelIndent) 0x20))
+    (makeLevel (level + 1) levelIndent)
 
 generateStruct :: Level -> [(Name, Expr)] -> Builder
 generateStruct level@(Level indent nextLevel) fields =
