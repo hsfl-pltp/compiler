@@ -17,6 +17,7 @@ import Data.Monoid ((<>))
 import qualified Data.Name as Name
 import qualified Data.Set as Set
 import qualified Data.Utf8 as Utf8
+import Debug.Trace (trace)
 import qualified Elm.Kernel as K
 import qualified Elm.ModuleName as ModuleName
 import qualified Generate.Arduino.Builder as Arduino
@@ -97,10 +98,10 @@ addGlobalHelp mode graph global state =
         -- For testing purposes we ignore the kernel code
         Opt.Kernel chunks dep -> state
         Opt.Enum index -> addStmt state (generateEnum mode global index)
-        -- Opt.Box ->
-        --   addStmt
-        --     (addGlobal mode graph state identity)
-        --     (generateBox mode global)
+        Opt.Box ->
+          addStmt
+            (addGlobal mode graph state identity)
+            (generateBox mode global)
         expr -> error ("unsupported argument: " ++ show expr)
 
 addStmt :: State -> Arduino.Stmt -> State
@@ -125,9 +126,21 @@ var (Opt.Global home name) code =
 isDebugger :: Opt.Global -> Bool
 isDebugger (Opt.Global (ModuleName.Canonical _ home) _) = home == Name.debugger
 
+-- GENERATE ENUM
 generateEnum :: Mode.Mode -> Opt.Global -> Index.ZeroBased -> Arduino.Stmt
 generateEnum mode global@(Opt.Global home name) index =
-  Arduino.Var "any" (ArduinoName.fromGlobal home name) (Expr.codeToExpr (Expr.generateCtor mode global []))
+  Arduino.Var "any" (ArduinoName.fromGlobal home name) $
+    case mode of
+      Mode.Dev _ -> Expr.codeToExpr (Expr.generateCtor mode global index 0)
+      Mode.Prod _ -> Arduino.Int (Index.toMachine index)
+
+-- GENERATE BOX
+generateBox :: Mode.Mode -> Opt.Global -> Arduino.Stmt
+generateBox mode global@(Opt.Global home name) =
+  Arduino.Var "any" (ArduinoName.fromGlobal home name) $
+    case mode of
+      Mode.Dev _ -> Expr.codeToExpr (Expr.generateCtor mode global Index.first 1)
+      Mode.Prod _ -> Arduino.Ref (ArduinoName.fromGlobal ModuleName.basics Name.identity)
 
 -- GENERATE KERNEL
 generateKernel :: Mode.Mode -> [K.Chunk] -> B.Builder

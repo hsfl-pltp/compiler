@@ -241,9 +241,16 @@ crushIfsHelp visitedBranches unvisitedBranches final =
 
 -- CTOR
 
-generateCtor :: Mode.Mode -> Opt.Global -> [Arduino.Expr] -> Code
-generateCtor mode (Opt.Global home name) args =
-  CExpr (Arduino.Class (ArduinoName.fromLocal name) args)
+generateCtor :: Mode.Mode -> Opt.Global -> Index.ZeroBased -> Int -> Code
+generateCtor mode (Opt.Global home name) index arity =
+  let argNames =
+        Index.indexedMap (\i _ -> ArduinoName.fromIndex i) [1 .. arity]
+   in -- ctorTag =
+      --   case mode of
+      --     Mode.Dev _ -> JS.String (Name.toBuilder name)
+      --     Mode.Prod _ -> JS.Int (ctorToInt home name index)
+      generateFunction argNames $ CExpr $
+        Arduino.Class (ArduinoName.fromLocal name) (map Arduino.Ref argNames)
 
 ctorToInt :: ModuleName.Canonical -> Name.Name -> Index.ZeroBased -> Int
 ctorToInt home name index =
