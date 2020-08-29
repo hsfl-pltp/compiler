@@ -18,7 +18,7 @@ kernel =
 class ElmValue {
 public:
   virtual ~ElmValue() {}
-  virtual String Debug() = 0;
+  virtual String ToString() = 0;
   virtual bool Equal(arx::shared_ptr<ElmValue> ev) = 0;
 };
 
@@ -41,7 +41,7 @@ public:
     return bool_ == eb->bool_;
   }
 
-  String Debug() {
+  String ToString() {
     return bool_ ? "True" : "False";
   }
 };
@@ -65,7 +65,7 @@ public:
     return float_ == ef->float_;
   }
 
-  String Debug() {
+  String ToString() {
     return String(float_);
   }
 };
@@ -101,11 +101,18 @@ public:
     }
   }
 
-  String Debug() {
-    String res = "";
+  arx::shared_ptr<ElmValue> GetArg(int i) {
+    return args_[i];
+  }
+
+  String ToString() {
+    String res = "(";
+    res += name_;
+    res += " ";
     for (int i = 0; i < size_; i++) {
-      res += args_[i]->Debug();
+      res += args_[i]->ToString();
     }
+    res += ")";
     return res;
   }
 };
@@ -151,19 +158,19 @@ public:
     }
   }
 
-  String Debug() {
+  String ToString() {
     String res = "{";
     for (int i = 0; i < size_ - 1; i++) {
       arx::shared_ptr<Entry> entry = args_[i];
-      res += String(entry->key);
+      res += entry->key;
       res += " = ";
-      res += entry->value->Debug();
+      res += entry->value->ToString();
       res += ", ";
     }
     arx::shared_ptr<Entry> last_entry = args_[size_ - 1];
-    res += String(last_entry->key);
+    res += last_entry->key;
     res += " = ";
-    res += last_entry->value->Debug();
+    res += last_entry->value->ToString();
     res += "}";
     return res;
   }
@@ -200,14 +207,23 @@ public:
     return ef->GetFloat();
   }
 
+  static arx::shared_ptr<ElmValue> GetArg(arx::shared_ptr<ElmValue> ev, int index) {
+    arx::shared_ptr<ElmConstr> ec = arx::static_pointer_cast<ElmConstr>(ev);
+    return ec->GetArg(index);
+  }
+
   static arx::shared_ptr<ElmValue> GetField(arx::shared_ptr<ElmValue> ev, String field) {
     arx::shared_ptr<ElmRecord> ef = arx::static_pointer_cast<ElmRecord>(ev);
     return ef->GetField(field);
   }
 
 
-  static arx::shared_ptr<ElmValue> Equal(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
+  static arx::shared_ptr<ElmValue> _equal(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
     return Bool(ev1->Equal(ev2));
+  }
+
+  static arx::shared_ptr<ElmValue> _lt(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
+    return Utils::Bool(Utils::GetFloat(ev1) < Utils::GetFloat(ev2));
   }
 };
 
@@ -215,36 +231,35 @@ public:
 class Basics {
 public:
 
-  static arx::shared_ptr<ElmValue> Add(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
+  static arx::shared_ptr<ElmValue> _or(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
+    return Utils::Bool(Utils::GetBool(ev1) || Utils::GetBool(ev2));
+  }
+
+
+  static arx::shared_ptr<ElmValue> _add(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
     return Utils::Float(Utils::GetFloat(ev1) + Utils::GetFloat(ev2));
   }
 
-  static arx::shared_ptr<ElmValue> Mul(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
+  static arx::shared_ptr<ElmValue> _mul(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
     return Utils::Float(Utils::GetFloat(ev1) * Utils::GetFloat(ev2));
   }
 
-  static arx::shared_ptr<ElmValue> Div(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
+  static arx::shared_ptr<ElmValue> _div(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
     return Utils::Float(Utils::GetFloat(ev1) / Utils::GetFloat(ev2));
   }
 
-  static arx::shared_ptr<ElmValue> Sub(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
+  static arx::shared_ptr<ElmValue> _sub(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
     return Utils::Float(Utils::GetFloat(ev1) - Utils::GetFloat(ev2));
   }
 
 
-  static arx::shared_ptr<ElmValue> ModBy(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
+  static arx::shared_ptr<ElmValue> _modBy(arx::shared_ptr<ElmValue> ev1, arx::shared_ptr<ElmValue> ev2) {
     int i1 = Utils::GetFloat(ev1);
     int i2 = Utils::GetFloat(ev2);
     if (i2 == 0) {
       exit(EXIT_FAILURE);
     } else {
-      int res = i1 % i2;
-      if(res > 0 && i1 < 0 || res < 0 && i2 > 0) {
-        res = i1 + res;
-        return Utils::Float(res);
-      } else {
-        return Utils::Float(res);
-      }
+      return Utils::Float(i1 % i2);
     }
   }
 };
@@ -253,14 +268,18 @@ public:
 class Debug {
 public:
 
-  static arx::shared_ptr<ElmValue> Log__Prod(const String& str, arx::shared_ptr<ElmValue> ev) {
+  static String toString(arx::shared_ptr<ElmValue> ev) {
+    return ev->ToString();
+  }
+
+  static arx::shared_ptr<ElmValue> _log__Prod(const String& str, arx::shared_ptr<ElmValue> ev) {
     return ev;
   }
 
-  static arx::shared_ptr<ElmValue> Log(const String& str, arx::shared_ptr<ElmValue> ev) {
+  static arx::shared_ptr<ElmValue> _log(const String& str, arx::shared_ptr<ElmValue> ev) {
     Serial.begin(9600);
-    Serial.println(str);
-    Serial.println(ev->Debug());
+    Serial.println(str + ":");
+    Serial.println(ev->ToString());
     return ev;
   }
 };
@@ -269,8 +288,8 @@ public:
 class Output {
 public:
 
-  static void DigitalPin(int pin, bool value) {
-    digitalWrite(pin, value ? HIGH : LOW);
+  static void DigitalPin(bool value) {
+    digitalWrite(LED_BUILTIN, value ? HIGH : LOW);
   }
 };
 

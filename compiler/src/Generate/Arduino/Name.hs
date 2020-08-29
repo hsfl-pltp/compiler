@@ -47,7 +47,7 @@ homeToBuilder (ModuleName.Canonical (Pkg.Name author project) home) =
 
 fromKernel :: Name.Name -> Name.Name -> Name
 fromKernel home name =
-  Name ("_" <> Name.toBuilder home <> "_" <> Name.toBuilder name)
+  Name (Name.toBuilder home <> "::_" <> Name.toBuilder name)
 
 
 -- CONSTRUCTORS
