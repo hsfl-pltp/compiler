@@ -44,19 +44,19 @@ generate expr =
     Opt.Int int -> CExpr (Arduino.Double (convertInt int))
     Opt.Float float -> CExpr (Arduino.Double (convertFloat float))
     Opt.If branches final -> generateIf branches final
-    Opt.VarKernel home name -> CExpr (Arduino.CoreRef (ArduinoName.fromKernel home name))
+    Opt.VarKernel home name -> CExpr (Arduino.Ref Arduino.Core (ArduinoName.fromKernel home name))
     Opt.Call func args -> CExpr (generateCall func args)
     Opt.VarEnum (Opt.Global home name) index ->
       CExpr (Arduino.Enum (ArduinoName.fromLocal name) (Arduino.Int (Index.toMachine index)))
     Opt.VarBox (Opt.Global home name) ->
-      CExpr (Arduino.Ref (ArduinoName.fromGlobal home name))
+      CExpr (Arduino.Ref Arduino.Global (ArduinoName.fromGlobal home name))
     Opt.VarDebug name home region unhandledValueName -> CExpr (generateDebug name home region unhandledValueName)
     Opt.Function args body ->
       generateFunction (map ArduinoName.fromLocal args) (generate body)
     Opt.VarLocal name ->
-      CExpr $ Arduino.Ref (ArduinoName.fromLocal name)
+      CExpr $ Arduino.Ref Arduino.Local (ArduinoName.fromLocal name)
     Opt.VarGlobal (Opt.Global home name) ->
-      CExpr $ Arduino.Ref (ArduinoName.fromGlobal home name)
+      CExpr $ Arduino.Ref Arduino.Global (ArduinoName.fromGlobal home name)
     Opt.Record fields ->
       CExpr $ generateRecord fields
     Opt.Access record field ->
@@ -131,11 +131,11 @@ generateNormalCall func args =
 
 callHelpers :: IntMap.IntMap Arduino.Expr
 callHelpers =
-  IntMap.fromList (map (\n -> (n, Arduino.Ref (ArduinoName.makeA n))) [2 .. 9])
+  IntMap.fromList (map (\n -> (n, Arduino.Ref Arduino.Local (ArduinoName.makeA n))) [2 .. 9])
 
 generateGlobalCall :: ModuleName.Canonical -> Name.Name -> [Arduino.Expr] -> Arduino.Expr
 generateGlobalCall home name args =
-  generateNormalCall (Arduino.Ref (ArduinoName.fromGlobal home name)) args
+  generateNormalCall (Arduino.Ref Arduino.Global (ArduinoName.fromGlobal home name)) args
 
 generateCoreCall :: Opt.Global -> [Opt.Expr] -> Arduino.Expr
 generateCoreCall (Opt.Global home@(ModuleName.Canonical _ moduleName) name) args =
@@ -186,7 +186,7 @@ append left right =
 
 arduinoAppend :: Arduino.Expr -> Arduino.Expr -> Arduino.Expr
 arduinoAppend a b =
-  Arduino.Call (Arduino.Ref (ArduinoName.fromKernel Name.utils "ap")) [a, b]
+  Arduino.Call (Arduino.Ref Arduino.Core (ArduinoName.fromKernel Name.utils "ap")) [a, b]
 
 toSeqs :: Opt.Expr -> [Arduino.Expr]
 toSeqs expr =
@@ -250,7 +250,7 @@ generateCtor mode (Opt.Global home name) index arity =
       --     Mode.Dev _ -> JS.String (Name.toBuilder name)
       --     Mode.Prod _ -> JS.Int (ctorToInt home name index)
       generateFunction argNames $ CExpr $
-        Arduino.Class (ArduinoName.fromLocal name) (map Arduino.Ref argNames)
+        Arduino.Class (ArduinoName.fromLocal name) (map (Arduino.Ref Arduino.Local) argNames)
 
 ctorToInt :: ModuleName.Canonical -> Name.Name -> Index.ZeroBased -> Int
 ctorToInt home name index =
@@ -264,9 +264,9 @@ generateMain :: Mode.Mode -> ModuleName.Canonical -> Opt.Main -> Arduino.Expr
 generateMain mode home main =
   case main of
     Opt.Static ->
-      Arduino.Ref (ArduinoName.fromGlobal home "main")
+      Arduino.Ref Arduino.Global (ArduinoName.fromGlobal home "main")
     Opt.Dynamic msgType decoder ->
-      Arduino.Ref (ArduinoName.fromGlobal home "main")
+      Arduino.Ref Arduino.Global (ArduinoName.fromGlobal home "main")
         # generateArduinoExpr decoder
 
 -- # toDebugMetadata mode msgType
@@ -278,18 +278,18 @@ generateMain mode home main =
 generateDebug :: Name.Name -> ModuleName.Canonical -> A.Region -> Maybe Name.Name -> Arduino.Expr
 generateDebug name (ModuleName.Canonical _ home) region unhandledValueName =
   if name /= "todo"
-    then Arduino.Ref (ArduinoName.fromGlobal ModuleName.debug name)
+    then Arduino.Ref Arduino.Global (ArduinoName.fromGlobal ModuleName.debug name)
     else case unhandledValueName of
       Nothing ->
-        Arduino.Call (Arduino.Ref (ArduinoName.fromKernel Name.debug "todo")) $
+        Arduino.Call (Arduino.Ref Arduino.Core (ArduinoName.fromKernel Name.debug "todo")) $
           [ Arduino.String (Name.toBuilder home),
             regionToArduinoExpr region
           ]
       Just valueName ->
-        Arduino.Call (Arduino.Ref (ArduinoName.fromKernel Name.debug "todoCase")) $
+        Arduino.Call (Arduino.Ref Arduino.Core (ArduinoName.fromKernel Name.debug "todoCase")) $
           [ Arduino.String (Name.toBuilder home),
             regionToArduinoExpr region,
-            Arduino.Ref (ArduinoName.fromLocal valueName)
+            Arduino.Ref Arduino.Local (ArduinoName.fromLocal valueName)
           ]
 
 regionToArduinoExpr :: A.Region -> Arduino.Expr

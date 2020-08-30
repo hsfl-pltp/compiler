@@ -8,6 +8,7 @@ module Generate.Arduino.Builder
     Stmt (..),
     PrefixOp (..),
     InfixOp (..),
+    RefKind (..),
   )
 where
 
@@ -18,10 +19,12 @@ import qualified Data.List as List
 import Generate.Arduino.Name (Name)
 import qualified Generate.Arduino.Name as Name
 
+data RefKind = Local | Global | Core
+
 -- Expressions
 data Expr
   = String Builder
-  | Ref Name
+  | Ref RefKind Name
   | Bool Bool
   | Integer Builder
   | Int Int
@@ -34,7 +37,6 @@ data Expr
   | Infix InfixOp Expr Expr
   | Function (Maybe Name) [Name] [Stmt]
   | Enum Name Expr
-  | CoreRef Name
   | Access Expr Name
 
 -- STATEMENTS
@@ -85,7 +87,7 @@ pretty level@(Level indent nextLevel@(Level nextIndent nextNextLevel)) statement
               Name.toBuilder name,
               prettyExpr level expr
             ]
-        CoreRef subname ->
+        Ref Core subname ->
           mconcat
             [ indent,
               "#define ",
@@ -94,17 +96,7 @@ pretty level@(Level indent nextLevel@(Level nextIndent nextNextLevel)) statement
               Name.toBuilder subname,
               "\n\n"
             ]
-        _ ->
-          mconcat
-            [ indent,
-              prettyDataType dataType,
-              " ",
-              Name.toBuilder name,
-              " =\n",
-              nextIndent,
-              prettyExpr nextNextLevel expr,
-              ";\n\n"
-            ]
+        _ -> generateConstant level dataType name expr
     Decl dataType name -> mconcat ["\n", prettyDataType dataType, " ", name]
     Const constExpr -> mconcat ["const ", prettyExpr nextLevel constExpr, ";\n"]
     Return expr -> mconcat [indent, "return ", prettyExpr nextLevel expr, ";\n"]
@@ -137,6 +129,30 @@ pretty level@(Level indent nextLevel@(Level nextIndent nextNextLevel)) statement
         ]
     EnumStmt name exprs -> error "Not supported EnumStmt"
 
+generateConstant :: Level -> String -> Name -> Expr -> Builder
+generateConstant level@(Level indent nextLevel@(Level nextIndent nextNextLevel)) dataType name expr =
+  mconcat
+    [ indent,
+      prettyDataType dataType,
+      " ",
+      Name.toBuilder name,
+      "() {\n",
+      nextIndent,
+      "static ",
+      prettyDataType dataType,
+      " ",
+      Name.toBuilder name,
+      " = ",
+      prettyExpr nextLevel expr,
+      ";\n",
+      nextIndent,
+      "return ",
+      Name.toBuilder name,
+      ";\n",
+      indent,
+      "}\n\n"
+    ]
+
 fromStmtBlock :: Level -> [Stmt] -> Builder
 fromStmtBlock level stmts = mconcat (map (pretty level) stmts)
 
@@ -148,7 +164,9 @@ prettyExpr :: Level -> Expr -> Builder
 prettyExpr level@(Level indent nextLevel) expression =
   case expression of
     String string -> mconcat ["\"", string, "\""]
-    Ref name -> Name.toBuilder name
+    Ref Core name -> Name.toBuilder name
+    Ref Local name -> Name.toBuilder name
+    Ref Global name -> Name.toBuilder name <> "()"
     Bool bool -> "Utils::Bool(" <> if (bool) then "true" <> ")" else "false" <> ")"
     Int n -> B.intDec n
     Double double -> "Utils::Float(" <> double <> ")"
@@ -174,6 +192,15 @@ prettyExpr level@(Level indent nextLevel) expression =
           ", \"",
           Name.toBuilder field,
           "\")"
+        ]
+    Call (Ref _ name) exprs ->
+      mconcat
+        [ Name.toBuilder name,
+          "(\n",
+          fromExprBlock nextLevel exprs,
+          "\n",
+          indent,
+          ")"
         ]
     Call expr1 exprs ->
       mconcat

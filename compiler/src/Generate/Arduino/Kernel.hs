@@ -268,7 +268,7 @@ public:
 class Debug {
 public:
 
-  static String toString(arx::shared_ptr<ElmValue> ev) {
+  static String _toString(arx::shared_ptr<ElmValue> ev) {
     return ev->ToString();
   }
 
@@ -277,7 +277,6 @@ public:
   }
 
   static arx::shared_ptr<ElmValue> _log(const String& str, arx::shared_ptr<ElmValue> ev) {
-    Serial.begin(9600);
     Serial.println(str + ":");
     Serial.println(ev->ToString());
     return ev;

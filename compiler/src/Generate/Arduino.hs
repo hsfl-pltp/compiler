@@ -91,8 +91,7 @@ addGlobal mode graph state@(State revKernels builders seen) global =
 addGlobalHelp :: Mode.Mode -> Graph -> Opt.Global -> State -> State
 addGlobalHelp mode graph global state =
   let addDeps deps someState = Set.foldl' (addGlobal mode graph) someState deps
-   in -- test = Opt.Kernel [K.JS (By.pack "Test")] (foldr K.addKernelDep Set.empty [K.JS (By.pack "Test")])
-      case graph ! global of
+   in case graph ! global of
         Opt.Define expr deps ->
           addStmt (addDeps deps state) (var global (Expr.generate expr))
         -- For testing purposes we ignore the kernel code
@@ -140,7 +139,7 @@ generateBox mode global@(Opt.Global home name) =
   Arduino.Var "any" (ArduinoName.fromGlobal home name) $
     case mode of
       Mode.Dev _ -> Expr.codeToExpr (Expr.generateCtor mode global Index.first 1)
-      Mode.Prod _ -> Arduino.Ref (ArduinoName.fromGlobal ModuleName.basics Name.identity)
+      Mode.Prod _ -> Arduino.Ref Arduino.Global (ArduinoName.fromGlobal ModuleName.basics Name.identity)
 
 -- GENERATE KERNEL
 generateKernel :: Mode.Mode -> [K.Chunk] -> B.Builder
@@ -221,11 +220,3 @@ checkedMerge a b =
     (Nothing, main) -> main
     (main, Nothing) -> main
     (Just _, Just _) -> error "cannot have two modules with the same name"
-
--- GENERATE BOX
--- generateBox :: Mode.Mode -> Opt.Global -> Arduino.Stmt
--- generateBox mode global@(Opt.Global home name) =
---   Arduino.Var "any" (ArduinoName.fromGlobal home name) $
---     case mode of
---       Mode.Dev _ -> Expr.codeToExpr (Expr.generateCtor mode global Index.first 1)
---       Mode.Prod _ -> Arduino.Ref (ArduinoName.fromGlobal ModuleName.basics Name.identity)
