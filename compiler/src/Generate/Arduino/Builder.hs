@@ -26,7 +26,6 @@ data Expr
   = String Builder
   | Ref RefKind Name
   | Bool Bool
-  | Integer Builder
   | Int Int
   | Double Builder
   | If Expr Expr Expr
@@ -53,26 +52,16 @@ data Stmt
   | EnumStmt Name Expr
   | PlaceholderStmt
 
--- Converts a datatype in form of a String to the equivelant C-datatype.
--- Also returned as a String.
+-- Currently, no type information is used, therefore, we use a single C++ type to model all Elm types
 prettyDataType :: String -> Builder
-prettyDataType dataType =
-  case dataType of
-    "String" -> "string"
-    "Bool" -> "bool"
-    "Integer" -> "int"
-    "Double" -> "double"
-    "Void" -> "void"
-    "Enum" -> "enum"
-    -- Dummy case used because type information is missing
-    "any" -> "arx::shared_ptr<ElmValue>"
+prettyDataType _ = "arx::shared_ptr<ElmValue>"
 
 stmtToBuilder :: Stmt -> Builder
 stmtToBuilder stmts = pretty levelZero stmts
 
 --This function takes a Stmt and converts it into a C-program as a string.
 pretty :: Level -> Stmt -> Builder
-pretty level@(Level indent nextLevel@(Level nextIndent nextNextLevel)) statement =
+pretty level@(Level indent nextLevel) statement =
   case statement of
     Block array -> mconcat (map (pretty level) array)
     EmptyStmt -> error "Not supported EmptyStmt"
@@ -127,10 +116,10 @@ pretty level@(Level indent nextLevel@(Level nextIndent nextNextLevel)) statement
           fromStmtBlock nextLevel stmts,
           "}\n"
         ]
-    EnumStmt name exprs -> error "Not supported EnumStmt"
+    EnumStmt _ _ -> error "Not supported EnumStmt"
 
 generateConstant :: Level -> String -> Name -> Expr -> Builder
-generateConstant level@(Level indent nextLevel@(Level nextIndent nextNextLevel)) dataType name expr =
+generateConstant (Level indent nextLevel@(Level nextIndent _)) dataType name expr =
   mconcat
     [ indent,
       prettyDataType dataType,
@@ -325,15 +314,6 @@ makeLevel level levelIndent =
     (B.byteString (BS.replicate (level * levelIndent) 0x20))
     (makeLevel (level + 1) levelIndent)
 
-generateStruct :: Level -> [(Name, Expr)] -> Builder
-generateStruct level@(Level indent nextLevel) fields =
-  let names = (map (\(name, expr) -> name) fields)
-   in mconcat
-        ( map
-            (\name -> indent <> "arx::shared_ptr<ElmValue> " <> Name.toBuilder name <> ";\n")
-            names
-        )
-
 generateCtorArguments :: Level -> Name -> [Expr] -> Builder
 generateCtorArguments level name args =
   mconcat
@@ -356,7 +336,7 @@ generateRecordArguments level args =
       B.intDec (length args)
     ]
   where
-    generateEntry field exp = "arx::shared_ptr<Entry>(new Entry{\"" <> Name.toBuilder field <> "\", " <> prettyExpr level exp <> "})"
+    generateEntry field expr = "arx::shared_ptr<Entry>(new Entry{\"" <> Name.toBuilder field <> "\", " <> prettyExpr level expr <> "})"
 
 generateArguments :: Level -> [Expr] -> Builder
 generateArguments level args =
