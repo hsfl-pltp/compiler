@@ -10,7 +10,6 @@ module Generate.Arduino.Expression
   )
 where
 
-import qualified AST.Canonical as Can
 import qualified AST.Optimized as Opt
 import Data.ByteString.Builder as B
 import qualified Data.Index as Index
@@ -19,13 +18,10 @@ import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Name as Name
 import qualified Data.Utf8 as Utf8
-import qualified Elm.Compiler.Type as Type
-import qualified Elm.Compiler.Type.Extract as Extract
 import qualified Elm.Float as EF
 import qualified Elm.ModuleName as ModuleName
 import qualified Elm.Package as Pkg
 import qualified Elm.String as ES
-import qualified Elm.Version as V
 import qualified Generate.Arduino.Builder as Arduino
 import qualified Generate.Arduino.Name as ArduinoName
 import qualified Generate.Mode as Mode
@@ -47,7 +43,7 @@ generate expr =
     Opt.VarKernel home name -> CExpr (Arduino.Ref Arduino.Core (ArduinoName.fromKernel home name))
     Opt.Call func args -> CExpr (generateCall func args)
     Opt.VarEnum (Opt.Global home name) index ->
-      CExpr (Arduino.Enum (ArduinoName.fromLocal name) (Arduino.Int (Index.toMachine index)))
+      CExpr (Arduino.Enum (ArduinoName.fromGlobal home name) (Arduino.Int (Index.toMachine index)))
     Opt.VarBox (Opt.Global home name) ->
       CExpr (Arduino.Ref Arduino.Global (ArduinoName.fromGlobal home name))
     Opt.VarDebug name home region unhandledValueName -> CExpr (generateDebug name home region unhandledValueName)
@@ -80,6 +76,7 @@ codeToStmt code =
   case code of
     CExpr expr -> Arduino.Return expr
     CBlock [stmt] -> stmt
+    CBlock stmts -> Arduino.Block stmts
 
 convertString :: ES.String -> B.Builder
 convertString string = Utf8.toBuilder string
@@ -124,7 +121,7 @@ generateCallHelp func args =
 generateNormalCall :: Arduino.Expr -> [Arduino.Expr] -> Arduino.Expr
 generateNormalCall func args =
   case IntMap.lookup (length args) callHelpers of
-    Just helper ->
+    Just _ ->
       Arduino.Call func args
     Nothing ->
       List.foldl' (\f a -> Arduino.Call f [a]) func args
@@ -242,7 +239,7 @@ crushIfsHelp visitedBranches unvisitedBranches final =
 -- CTOR
 
 generateCtor :: Mode.Mode -> Opt.Global -> Index.ZeroBased -> Int -> Code
-generateCtor mode (Opt.Global home name) index arity =
+generateCtor _ (Opt.Global _ name) _ arity =
   let argNames =
         Index.indexedMap (\i _ -> ArduinoName.fromIndex i) [1 .. arity]
    in -- ctorTag =
@@ -252,20 +249,14 @@ generateCtor mode (Opt.Global home name) index arity =
       generateFunction argNames $ CExpr $
         Arduino.Class (ArduinoName.fromLocal name) (map (Arduino.Ref Arduino.Local) argNames)
 
-ctorToInt :: ModuleName.Canonical -> Name.Name -> Index.ZeroBased -> Int
-ctorToInt home name index =
-  if home == ModuleName.dict && name == "RBNode_elm_builtin" || name == "RBEmpty_elm_builtin"
-    then 0 - Index.toHuman index
-    else Index.toMachine index
-
 -- GENERATE MAIN
 
 generateMain :: Mode.Mode -> ModuleName.Canonical -> Opt.Main -> Arduino.Expr
-generateMain mode home main =
+generateMain _ home main =
   case main of
     Opt.Static ->
       Arduino.Ref Arduino.Global (ArduinoName.fromGlobal home "main")
-    Opt.Dynamic msgType decoder ->
+    Opt.Dynamic _ decoder ->
       Arduino.Ref Arduino.Global (ArduinoName.fromGlobal home "main")
         # generateArduinoExpr decoder
 
